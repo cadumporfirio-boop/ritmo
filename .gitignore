@@ -1,0 +1,10 @@
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+backend/vendor/
+backend/.env
+backend/storage/logs/*
+backend/bootstrap/cache/*.php
+backend/database/*.sqlite*
+tools/
+.env
