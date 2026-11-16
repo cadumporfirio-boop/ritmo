@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { initialState, createSession, validSet, summarize, finishSession, restore, removeExtraSeries, isExtraSeries } from '../src/domain.ts';
+import { initialState, createSession, validSet, summarize, finishSession, restore, removeExtraSeries, isExtraSeries, setExerciseCompletion, exerciseCompleted } from '../src/domain.ts';
 test('metas ou valores preenchidos sem confirmação não contam como desempenho',()=>{
  const session=createSession(initialState().week[0],45);
  session.exercises[0].sets[0]={kg:20,reps:10,rir:2,done:false};
@@ -41,4 +41,18 @@ test('séries originais e índices inválidos não podem ser removidos',()=>{
  exercise.sets.push({kg:null,reps:null,rir:null,done:false});
  assert.equal(isExtraSeries(exercise,3),true);assert.equal(isExtraSeries(exercise,0),false);
  assert.notEqual(removeExtraSeries(exercise,3),null);
+});
+test('concluir exercício exige todos os registros e inclui séries extras sem inventar resultados',()=>{
+ const exercise=createSession(initialState().week[0],25).exercises[0];
+ exercise.sets[0]={kg:20,reps:10,rir:null,done:true};
+ assert.deepEqual(setExerciseCompletion(exercise,true),{success:false,missing:2});
+ assert.equal(exercise.sets[1].done,false);
+ exercise.sets.forEach(set=>Object.assign(set,{kg:20,reps:10}));
+ exercise.sets.push({kg:25,reps:7,rir:1,done:false});
+ assert.equal(setExerciseCompletion(exercise,true).success,true);
+ assert.equal(exerciseCompleted(exercise),true);
+ assert.equal(exercise.sets[3].done,true);
+ setExerciseCompletion(exercise,false);
+ assert.equal(exerciseCompleted(exercise),false);
+ assert.equal(exercise.sets[3].kg,25);assert.equal(exercise.sets[3].reps,7);
 });

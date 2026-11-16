@@ -1,10 +1,29 @@
 import { summarize, validSet } from './domain.ts';
-import type { Exercise, Session } from './domain';
+import type { Exercise, Session, Series } from './domain';
 
 export type Tone = 'positive' | 'attention' | 'neutral' | 'stable';
 export interface Indicator { label: string; value: string; message: string; tone: Tone; percent?: number }
 export interface ExerciseAnalysis { name: string; previousSessionId: string | null; indicators: Indicator[] }
 export interface Analysis { sessionId: string; methodVersion: 1; indicators: Indicator[]; exercises: ExerciseAnalysis[] }
+export interface SeriesAssessment {tone:Tone;label:string;comment:string}
+export function assessSeries(exercise:Exercise,set:Series):SeriesAssessment {
+  if(!set.done)return {tone:'neutral',label:'Pendente',comment:'Confirme a série para avaliar a meta.'};
+  if(!validSet(set))return {tone:'neutral',label:'Revisar registro',comment:'Confira carga, repetições e RIR.'};
+  const goal=exercise.metrics;
+  if(!goal || !Number.isInteger(goal.repMin) || !Number.isInteger(goal.repMax) || goal.repMin<1 || goal.repMax<goal.repMin)return {tone:'neutral',label:'Registrada · sem meta',comment:'Esta ficha não tem uma faixa de repetições válida.'};
+  if(set.reps!<goal.repMin)return {tone:'attention',label:'Abaixo da meta',comment:`${set.reps} reps; faltaram ${goal.repMin-set.reps!} para o mínimo de ${goal.repMin}.`};
+  if(set.reps!>goal.repMax)return {tone:'attention',label:'Acima da faixa',comment:`${set.reps} reps; o planejado era ${goal.repMin}–${goal.repMax}.`};
+  return {tone:'positive',label:'Meta atingida',comment:`${set.reps} reps dentro da faixa de ${goal.repMin}–${goal.repMax}.`};
+}
+export function exerciseAssessment(exercise:Exercise) {
+  const registered=exercise.sets.filter(set=>set.done && validSet(set));
+  const matched=registered.filter(set=>assessSeries(exercise,set).tone==='positive').length;
+  const outside=registered.filter(set=>assessSeries(exercise,set).tone==='attention').length;
+  const unknown=registered.length-matched-outside;
+  const complete=exercise.sets.length>0 && registered.length===exercise.sets.length;
+  const tone:Tone=!complete?'neutral':outside?'attention':unknown?'neutral':'positive';
+  return {registered:registered.length,total:exercise.sets.length,matched,outside,unknown,complete,tone};
+}
 const round = (n: number) => new Intl.NumberFormat('pt-BR',{maximumFractionDigits:1}).format(n);
 const full = (e: Exercise) => e.sets.length>0 && e.sets.every(s=>s.done && validSet(s));
 function compatible(a: Exercise,b: Exercise): boolean {

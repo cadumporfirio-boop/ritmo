@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createSession,initialState} from '../src/domain.ts';
-import {analyzeSession} from '../src/analytics.ts';
+import {analyzeSession,assessSeries,exerciseAssessment} from '../src/analytics.ts';
 function fixture(date:string,reps=10){const s=createSession(initialState().week[0],25);s.date=date;s.completed=true;s.exercises=s.exercises.slice(0,1);s.exercises[0].sets.forEach(set=>Object.assign(set,{kg:20,reps,done:true}));return s;}
 test('compara mesma carga com sessão anterior, mesmo com histórico fora de ordem',()=>{
  const older=fixture('2026-11-01',8),previous=fixture('2026-11-05',10),current=fixture('2026-11-10',11),future=fixture('2026-11-15',15);
@@ -34,4 +34,21 @@ test('meta usa apenas séries confirmadas e barra fica entre 0 e 100',()=>{
  const current=fixture('2026-11-10');current.exercises[0].sets[0].reps=7;current.exercises[0].sets[1].done=false;
  const metric=analyzeSession(current,[]).exercises[0].indicators[0];
  assert.equal(metric.value,'1/2');assert.equal(metric.percent,50);assert.equal(metric.tone,'attention');
+});
+test('cor da série reflete faixa, inclusive limites, em vez de apenas estar confirmada',()=>{
+ const exercise=fixture('2026-11-16').exercises[0];
+ for(const [reps,tone] of [[7,'attention'],[8,'positive'],[12,'positive'],[13,'attention']] as const){
+  assert.equal(assessSeries(exercise,{kg:20,reps,rir:2,done:true}).tone,tone);
+ }
+ assert.equal(assessSeries(exercise,{kg:20,reps:7,rir:2,done:true}).comment,'7 reps; faltaram 1 para o mínimo de 8.');
+ assert.equal(assessSeries(exercise,{kg:20,reps:13,rir:2,done:true}).label,'Acima da faixa');
+ assert.equal(assessSeries(exercise,{kg:20,reps:10,rir:2,done:false}).tone,'neutral');
+});
+test('exercício registrado com uma série fora da faixa não fica verde',()=>{
+ const exercise=fixture('2026-11-16').exercises[0];
+ exercise.sets[1].reps=6;
+ assert.deepEqual(exerciseAssessment(exercise),{registered:3,total:3,matched:2,outside:1,unknown:0,complete:true,tone:'attention'});
+ delete exercise.metrics;
+ assert.equal(exerciseAssessment(exercise).tone,'neutral');
+ assert.equal(assessSeries(exercise,exercise.sets[0]).label,'Registrada · sem meta');
 });

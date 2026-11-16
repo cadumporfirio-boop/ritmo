@@ -11,6 +11,15 @@ export function isExtraSeries(exercise: Exercise, index: number): boolean {
 export function removeExtraSeries(exercise: Exercise, index: number): Series | null {
   return isExtraSeries(exercise,index) ? exercise.sets.splice(index,1)[0] : null;
 }
+export function exerciseCompleted(exercise: Exercise): boolean {
+  return exercise.sets.length>0 && exercise.sets.every(set=>set.done && validSet(set));
+}
+export function setExerciseCompletion(exercise: Exercise, completed: boolean): {success:boolean; missing:number} {
+  const missing=exercise.sets.filter(set=>!validSet(set)).length;
+  if(completed && (missing>0 || !exercise.sets.length))return {success:false,missing};
+  exercise.sets.forEach(set=>set.done=completed);
+  return {success:true,missing:0};
+}
 export const initialWeek: Activity[] = [
   {day:'Seg',name:'Superiores completo',time:'19:00',type:'strength',minutes:60},
   {day:'Ter',name:'Basquete',time:'19:00',type:'sport',minutes:60},

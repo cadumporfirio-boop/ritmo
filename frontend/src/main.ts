@@ -2,8 +2,8 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { Component, signal, computed, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AnalysisComponent } from './analysis.component';
-import { analysisReport } from './analytics';
-import { initialState, restore, createSession, validSet, summarize, finishSession, isExtraSeries, removeExtraSeries } from './domain';
+import { analysisReport, assessSeries, exerciseAssessment } from './analytics';
+import { initialState, restore, createSession, validSet, summarize, finishSession, isExtraSeries, removeExtraSeries, exerciseCompleted, setExerciseCompletion } from './domain';
 import type { State, Activity, Series, Exercise } from './domain';
 
 @Component({selector:'app-root',standalone:true,imports:[FormsModule,AnalysisComponent],templateUrl:'./app.html'})
@@ -60,6 +60,10 @@ class App {
   stats = summarize;
   addSeries(exercise:Exercise){if(exercise.sets.length>=20){this.notify('Limite de 20 séries por exercício.');return;}exercise.sets.push({kg:null,reps:null,rir:null,done:false});this.touch();}
   isExtra = isExtraSeries;
+  assessSeries = assessSeries;
+  exerciseAssessment = exerciseAssessment;
+  exerciseCompleted = exerciseCompleted;
+  completeExercise(exercise:Exercise){const reopen=exerciseCompleted(exercise);const result=setExerciseCompletion(exercise,!reopen);if(!result.success){this.notify(`Preencha ou corrija ${result.missing} ${result.missing===1?'série':'séries'} antes de concluir o exercício.`);return;}this.touch();this.notify(reopen?'Exercício reaberto. As anotações foram mantidas.':'Exercício registrado. Confira as cores e os comentários de cada série.');}
   removeSeries(exercise:Exercise,index:number){const session=this.state().active;if(!session)return;const set=removeExtraSeries(exercise,index);if(!set)return;this.removedSeries={sessionId:session.id,exerciseId:exercise.id,index,set};this.touch();this.notify('Série extra removida. Você pode desfazer.');}
   undoSeries(){const removed=this.removedSeries;const session=this.state().active;if(!removed||session?.id!==removed.sessionId)return;const exercise=session.exercises.find(e=>e.id===removed.exerciseId);if(!exercise||exercise.sets.length>=20){this.notify('Não há espaço para restaurar a série.');return;}exercise.sets.splice(Math.min(removed.index,exercise.sets.length),0,removed.set);this.removedSeries=null;this.touch();this.notify('Série restaurada com suas anotações.');}
   exportAnalysis(){const blob=new Blob([JSON.stringify(analysisReport(this.state().sessions),null,2)],{type:'application/json'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='ritmo-analises.json';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),500);}
