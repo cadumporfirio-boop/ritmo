@@ -4,6 +4,13 @@ export interface Session { id: string; date: string; name: string; minutes: numb
 export interface Activity { day: string; name: string; time: string; type: 'strength' | 'sport' | 'cardio' | 'rest'; minutes: number }
 export interface Profile { name: string; goal: string; experience: string; equipment: string; autonomy: boolean }
 export interface State { version: 1; profile: Profile; week: Activity[]; sessions: Session[]; active: Session | null }
+export const PLANNED_SERIES_COUNT = 3;
+export function isExtraSeries(exercise: Exercise, index: number): boolean {
+  return Number.isInteger(index) && index >= PLANNED_SERIES_COUNT && index < exercise.sets.length;
+}
+export function removeExtraSeries(exercise: Exercise, index: number): Series | null {
+  return isExtraSeries(exercise,index) ? exercise.sets.splice(index,1)[0] : null;
+}
 export const initialWeek: Activity[] = [
   {day:'Seg',name:'Superiores completo',time:'19:00',type:'strength',minutes:60},
   {day:'Ter',name:'Basquete',time:'19:00',type:'sport',minutes:60},
