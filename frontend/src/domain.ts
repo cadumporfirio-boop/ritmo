@@ -1,5 +1,5 @@
 export interface Series { kg: number | null; reps: number | null; rir: number | null; done: boolean }
-export interface Exercise { id: string; name: string; detail: string; target: string; previous: string; sets: Series[] }
+export interface Exercise { id: string; name: string; detail: string; target: string; previous: string; sets: Series[]; metrics?: { key: string; loadBasis: string; setType: string; repMin: number; repMax: number } }
 export interface Session { id: string; date: string; name: string; minutes: number; exercises: Exercise[]; note: string; completed: boolean }
 export interface Activity { day: string; name: string; time: string; type: 'strength' | 'sport' | 'cardio' | 'rest'; minutes: number }
 export interface Profile { name: string; goal: string; experience: string; equipment: string; autonomy: boolean }
@@ -18,7 +18,7 @@ export function createSession(activity: Activity, minutes: number): Session {
   const lower = activity.name.toLowerCase().includes('inferiores');
   const names = lower ? ['Agachamento livre','Leg press','Mesa flexora','Elevação de panturrilha'] : ['Supino reto com halteres','Remada baixa','Desenvolvimento com halteres','Puxada frontal','Rosca direta','Tríceps na polia'];
   const count = minutes <= 30 ? 3 : names.length;
-  return {id:crypto.randomUUID(),date:new Date().toISOString(),name:activity.name,minutes,note:'',completed:false,exercises:activity.type==='strength'?names.slice(0,count).map((name,i)=>({id:crypto.randomUUID(),name,detail:i===0?'Principal · descanso 90 s':'Complementar · descanso 60–90 s',target:'3 séries · 8–12 repetições',previous:'Sem registro anterior',sets:Array.from({length:3},()=>({kg:null,reps:null,rir:null,done:false}))})):[]};
+  return {id:crypto.randomUUID(),date:new Date().toISOString(),name:activity.name,minutes,note:'',completed:false,exercises:activity.type==='strength'?names.slice(0,count).map((name,i)=>({id:crypto.randomUUID(),name,metrics:{key:'demo-v1:'+name,loadBasis:'Carga informada no mesmo equipamento',setType:'Série de trabalho',repMin:8,repMax:12},detail:i===0?'Principal · descanso 90 s':'Complementar · descanso 60–90 s',target:'3 séries · 8–12 repetições',previous:'Sem registro anterior',sets:Array.from({length:3},()=>({kg:null,reps:null,rir:null,done:false}))})):[]};
 }
 export function validSet(set: Series): boolean { return set.kg !== null && Number.isFinite(set.kg) && set.kg >= 0 && set.kg <= 1000 && set.reps !== null && Number.isInteger(set.reps) && set.reps > 0 && set.reps <= 200 && (set.rir===null || (Number.isInteger(set.rir) && set.rir>=0 && set.rir<=10)); }
 export function summarize(session: Session) {

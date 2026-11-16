@@ -1,10 +1,12 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { Component, signal, computed, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AnalysisComponent } from './analysis.component';
+import { analysisReport } from './analytics';
 import { initialState, restore, createSession, validSet, summarize, finishSession } from './domain';
-import type { State, Activity, Series } from './domain';
+import type { State, Activity, Series, Exercise } from './domain';
 
-@Component({selector:'app-root',standalone:true,imports:[FormsModule],templateUrl:'./app.html'})
+@Component({selector:'app-root',standalone:true,imports:[FormsModule,AnalysisComponent],templateUrl:'./app.html'})
 class App {
   readonly state = signal<State>(initialState());
   readonly tab = signal('today');
@@ -55,5 +57,7 @@ class App {
   async requestAI(){this.busy.set(true);this.aiMessage.set('');try{const response=await fetch('/api/planning',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({profile:this.state().profile,week:this.state().week})});const body=await response.json();this.aiMessage.set(body.message||'Não foi possível gerar o planejamento.');}catch{this.aiMessage.set('A API PHP ainda não está conectada. Você pode explorar o treino de exemplo e registrar sessões localmente.');}finally{this.busy.set(false);}}
   formatDate(date:string){return new Date(date).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});}
   stats = summarize;
+  addSeries(exercise:Exercise){if(exercise.sets.length>=20){this.notify('Limite de 20 séries por exercício.');return;}exercise.sets.push({kg:null,reps:null,rir:null,done:false});this.touch();}
+  exportAnalysis(){const blob=new Blob([JSON.stringify(analysisReport(this.state().sessions),null,2)],{type:'application/json'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='ritmo-analises.json';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),500);}
 }
 bootstrapApplication(App).catch(console.error);

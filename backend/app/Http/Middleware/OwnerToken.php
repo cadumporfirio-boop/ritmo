@@ -18,6 +18,7 @@ class OwnerToken
         if (! is_string($provided) || ! hash_equals($expected, $provided)) {
             return response()->json(['message' => 'Acesso não autorizado.'], 401);
         }
+
         return $next($request);
     }
 }
