@@ -107,4 +107,40 @@ class TrainingContractTest extends TestCase
         $this->withToken($this->token)->putJson('/api/training', ['revision' => 1, 'library' => $library])->assertUnprocessable();
         $this->withToken($this->token)->getJson('/api/training')->assertJsonPath('library.workouts.0.title', 'Treino')->assertJsonPath('revision', 1);
     }
+
+    public function test_series_expand_inside_steps_and_extra_series_preserve_planned_entries(): void
+    {
+        $library = $this->library();
+        $plan = $library->workouts[0];
+        $step = $plan->nodes[0]->children[0];
+        $step->series = [
+            (object) ['id' => 'warmup', 'role' => 'warmup', 'goals' => [(object) ['metric' => 'reps', 'mode' => 'range', 'required' => true, 'min' => 8, 'max' => 12]]],
+            (object) ['id' => 'top', 'role' => 'top', 'goals' => $step->goals],
+        ];
+        $entries = [];
+        for ($round = 0; $round < 2; $round++) {
+            for ($series = 0; $series < 2; $series++) {
+                $entries[] = (object) ['key' => '0r'.$round.'/0s'.$series, 'stepId' => 'step-a', 'values' => (object) [], 'done' => false, 'skipped' => false, 'note' => ''];
+            }
+        }
+        $entries[] = (object) ['key' => 'extra-one', 'stepId' => 'step-a', 'values' => (object) ['duration' => 60], 'done' => true, 'skipped' => false, 'note' => '', 'extra' => (object) ['afterKey' => '0r0/0s1', 'role' => 'work', 'goals' => $step->goals]];
+        $library->active = (object) ['kind' => 'session', 'schemaVersion' => 2, 'id' => 'series-session', 'date' => '2026-11-17T10:00:00.000Z', 'plan' => $plan, 'entries' => $entries, 'completed' => false, 'note' => ''];
+        $this->withToken($this->token)->putJson('/api/training', ['revision' => 0, 'library' => $library])->assertOk();
+        $library->active->entries[0]->done = true;
+        $this->withToken($this->token)->putJson('/api/training', ['revision' => 1, 'library' => $library])->assertUnprocessable();
+        $library->active->entries[0]->done = false;
+        $library->active->entries[4]->extra->afterKey = 'missing';
+        $this->withToken($this->token)->putJson('/api/training', ['revision' => 1, 'library' => $library])->assertUnprocessable();
+    }
+
+    public function test_series_reject_duplicate_identifiers_and_inconsistent_goals(): void
+    {
+        $plan = $this->workout();
+        $step = $plan->nodes[0]->children[0];
+        $step->series = [(object) ['id' => 'series-one', 'role' => 'top', 'goals' => [(object) ['metric' => 'reps', 'mode' => 'range', 'required' => true, 'min' => 12, 'max' => 8]]]];
+        $this->withToken($this->token)->postJson('/api/training/validate', (array) $plan)->assertUnprocessable();
+        $step->series[0]->goals = $step->goals;
+        $step->series[] = clone $step->series[0];
+        $this->withToken($this->token)->postJson('/api/training/validate', (array) $plan)->assertUnprocessable();
+    }
 }

@@ -114,7 +114,7 @@ test('Treinos fica limpa, séries são agrupadas e o editor pode separá-las',as
  await click(document,'Criar treino +');await click(document,'Séries tradicionais ↗');await click(document,'Salvar treino ✓');await click(document,'Iniciar treino →');
  assert.equal(document.querySelectorAll('.execution-block').length,1);assert.equal(document.querySelectorAll('.series-entry').length,3);
  await click(document,'Encerrar e salvar sessão ✓');assert.ok(!document.querySelector('app-root').textContent.includes('Seu histórico nesta biblioteca'));
- await click(document,'Editar');await click(document,'Separar em etapas');await click(document,'Salvar treino ✓');await click(document,'Iniciar treino →');assert.equal(document.querySelectorAll('.execution-block').length,3);
+ await click(document,'Editar');await click(document,'Separar séries em etapas');await click(document,'Salvar treino ✓');await click(document,'Iniciar treino →');assert.equal(document.querySelectorAll('.execution-block').length,3);
  await click(document,'Encerrar e salvar sessão ✓');await click(document,'↗ Histórico');assert.ok(document.querySelector('app-root').textContent.includes('Seu histórico nesta biblioteca'));await click(document,'Consultar');assert.ok(document.querySelector('training-runner'));assert.deepEqual(errors,[]);
  }finally{dom.window.close();}
 });
@@ -125,5 +125,21 @@ test('análise antiga só é criada quando solicitada e fichas antigas ficam no 
  await click(document,'↗ Histórico');assert.ok(document.querySelector('app-root').textContent.includes('Aproveitar uma ficha antiga'));assert.equal(document.querySelectorAll('app-session-analysis').length,0);
  await click(document,'Ver análise · '+session.name);assert.equal(document.querySelectorAll('app-session-analysis').length,1);
  await click(document,'Fechar análise · '+session.name);assert.equal(document.querySelectorAll('app-session-analysis').length,0);assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});
+
+test('séries por tipo, conclusão do exercício, cores e extras preservam a ficha',async()=>{
+ const {dom,document,errors}=await open();try{
+ await click(document,'▤ Treinos');await click(document,'Criar treino +');await click(document,'Séries tradicionais ↗');
+ assert.equal(document.querySelectorAll('select[aria-label="Tipo da série"]').length,3);
+ const type=document.querySelector('select[aria-label="Tipo da série"]');type.value='warmup';type.dispatchEvent(new dom.window.Event('change',{bubbles:true}));await delay();
+ await click(document,'+ Série');assert.equal(document.querySelectorAll('select[aria-label="Tipo da série"]').length,4);await click(document,'Remover série');
+ await click(document,'Salvar treino ✓');await click(document,'Iniciar treino →');assert.equal(document.querySelectorAll('.series-grid-row').length,3);
+ const fill=(label,value)=>{const input=document.querySelector(`input[aria-label="${label}"]`);input.value=value;input.dispatchEvent(new dom.window.Event('input',{bubbles:true}));};
+ await click(document,'Concluir exercício ✓');assert.equal(library(dom).active.entries.some(e=>e.done),false);
+ for(let i=1;i<=3;i++){fill('Etapa '+i+' Carga','20');fill('Etapa '+i+' Repetições',i===2?'6':'10');}await delay();
+ await click(document,'Concluir exercício ✓');assert.equal(document.querySelectorAll('.series-entry[data-tone="positive"]').length,2);assert.equal(document.querySelectorAll('.series-entry[data-tone="attention"]').length,1);
+ const snapshot=JSON.stringify(library(dom).active.plan);await click(document,'Adicionar série extra +');assert.equal(document.querySelectorAll('.series-grid-row').length,4);assert.equal(JSON.stringify(library(dom).active.plan),snapshot);
+ await click(document,'Remover série extra');assert.equal(document.querySelectorAll('.series-grid-row').length,3);assert.equal(JSON.stringify(library(dom).active.plan),snapshot);assert.deepEqual(errors,[]);
  }finally{dom.window.close();}
 });

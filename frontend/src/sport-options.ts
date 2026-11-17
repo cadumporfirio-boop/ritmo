@@ -1,4 +1,4 @@
-import {METRICS,ROLES,step,group,workout,preset} from './training.ts';
+import {METRICS,ROLES,step,group,workout,preset,uid,goal} from './training.ts';
 import type {Metric,Step,TrainingNode,Workout} from './training.ts';
 
 interface SportProfile {
@@ -18,14 +18,15 @@ const profiles:Record<string,SportProfile>={
 export function profileFor(sport:string):SportProfile{return profiles[sport]??free;}
 export function roleOptions(sport:string,current?:string){const profile=profileFor(sport);return ROLES.filter(role=>profile.roles.includes(role.id)||role.id===current).map(role=>({...role,label:(profile.labels?.[role.id]??role.label)+(profile.roles.includes(role.id)?'':' · já configurado'),retained:!profile.roles.includes(role.id)}));}
 export function metricOptions(sport:string,current?:Metric){const profile=profileFor(sport);const ids=[...profile.metrics];if(current&&!ids.includes(current))ids.push(current);return ids.map(id=>({id,...METRICS[id],label:METRICS[id].label+(profile.metrics.includes(id)?'':' · já configurada'),retained:!profile.metrics.includes(id)}));}
-export function hasRetainedOptions(node:Step,sport:string){const profile=profileFor(sport);return !profile.roles.includes(node.role)||node.goals.some(target=>!profile.metrics.includes(target.metric));}
+export function hasRetainedOptions(node:Pick<Step,'role'|'goals'>,sport:string){const profile=profileFor(sport);return !profile.roles.includes(node.role)||node.goals.some(target=>!profile.metrics.includes(target.metric));}
 export function createStepForSport(sport:string):Step {
  const profile=profileFor(sport),node=step(profile.stepName);
  if(sport!=='strength')node.goals=profile===free?[]:[{metric:profile.metrics[0],mode:'record',required:true}];
+ if(sport==='strength'){node.goals=[goal('load'),goal('reps','range',8,12),{...goal('rir'),required:false}];node.series=Array.from({length:3},()=>({id:uid(),role:node.role,goals:structuredClone(node.goals)}));}
  return node;
 }
 export function createGroupForSport(sport:string){return group(profileFor(sport).blockName,1,[createStepForSport(sport)]);}
-export function createWorkoutForSport(sport:string):Workout {const plan=workout();plan.sport=sport;const root=createGroupForSport(sport);if(sport==='strength')root.repeat=3;plan.nodes=[root];return plan;}
+export function createWorkoutForSport(sport:string):Workout {const plan=workout();plan.sport=sport;const root=createGroupForSport(sport);plan.nodes=[root];return plan;}
 export function presetForSport(type:string,sport:string):Workout {
  const plan=preset(type);plan.sport=sport;
  if(type==='interval'&&sport==='cycling'){plan.title='Exemplo · ciclismo intervalado';walkNames(plan.nodes,'Trecho de corrida','Trecho de bicicleta');}

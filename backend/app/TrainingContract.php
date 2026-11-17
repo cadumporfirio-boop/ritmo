@@ -98,6 +98,14 @@ class TrainingContract
             if ($node->kind === 'group') {
                 $this->nodes($node->children, $ids, $depth + 1);
             } else {
+                foreach ($node->series ?? [] as $series) {
+                    $definition = clone $node;
+                    unset($definition->series);
+                    $definition->id = $series->id;
+                    $definition->role = $series->role;
+                    $definition->goals = $series->goals;
+                    $this->nodes([$definition], $ids, $depth);
+                }
                 $metrics = [];
                 foreach ($node->goals as $goal) {
                     if (isset($metrics[$goal->metric])) {
@@ -131,7 +139,16 @@ class TrainingContract
         foreach ($nodes as $index => $node) {
             $key = $prefix.$index;
             if ($node->kind === 'step') {
-                $result[] = ['key' => $key, 'step' => $node];
+                if (isset($node->series)) {
+                    foreach ($node->series as $seriesIndex => $series) {
+                        $definition = clone $node;
+                        $definition->role = $series->role;
+                        $definition->goals = $series->goals;
+                        $result[] = ['key' => $key.'s'.$seriesIndex, 'step' => $definition];
+                    }
+                } else {
+                    $result[] = ['key' => $key, 'step' => $node];
+                }
                 if (count($result) > 300) {
                     $this->fail('O treino excede 300 etapas executadas. Divida-o em sessões.');
                 }
@@ -146,11 +163,42 @@ class TrainingContract
     private function session(stdClass $session): void
     {
         $expanded = $this->workout($session->plan);
-        if (strtotime($session->date) === false || count($expanded) !== count($session->entries)) {
+        $original = array_values(array_filter($session->entries, fn (stdClass $entry): bool => ! isset($entry->extra)));
+        if (strtotime($session->date) === false || count($expanded) !== count($original)) {
             $this->fail('O registro não corresponde às etapas da ficha.');
         }
+        $byKey = [];
         foreach ($expanded as $index => $item) {
-            $entry = $session->entries[$index];
+            if ($original[$index]->key !== $item['key']) {
+                $this->fail('O registro não corresponde às etapas da ficha.');
+            }
+            $byKey[$item['key']] = $item;
+        }
+        $keys = [];
+        $extraCount = 0;
+        foreach ($session->entries as $entry) {
+            if (isset($keys[$entry->key])) {
+                $this->fail('Registro duplicado.');
+            }
+            $keys[$entry->key] = true;
+            if (isset($entry->extra)) {
+                $anchor = $byKey[$entry->extra->afterKey] ?? null;
+                if ($anchor === null || $anchor['step']->id !== $entry->stepId || isset($byKey[$entry->key]) || ++$extraCount > 100) {
+                    $this->fail('Série extra incompatível.');
+                }
+                $definition = clone $anchor['step'];
+                unset($definition->series);
+                $definition->role = $entry->extra->role;
+                $definition->goals = $entry->extra->goals;
+                $ids = [];
+                $this->nodes([$definition], $ids, 0);
+                $item = ['key' => $entry->key, 'step' => $definition];
+            } else {
+                $item = $byKey[$entry->key] ?? null;
+                if ($item === null) {
+                    $this->fail('Registro sem etapa.');
+                }
+            }
             if ($entry->key !== $item['key'] || $entry->stepId !== $item['step']->id) {
                 $this->fail('Identificação de etapa incompatível.');
             }

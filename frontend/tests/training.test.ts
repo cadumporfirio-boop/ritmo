@@ -21,7 +21,7 @@ test('limita crescimento exponencial, profundidade e repetições inválidas',()
  const negative=preset('strength');(negative.nodes[0] as Group).repeat=0;assert.throws(()=>parseTraining(negative,'workout'));
 });
 test('rejeita metas incoerentes, duplicadas e campos desconhecidos',()=>{
- const plan=preset('strength'),target=expand(plan)[0].step;
+ const plan=preset('strength'),target=((plan.nodes[0] as Group).children[0] as Step).series![0];
  target.goals=[goal('reps','range',12,8)];assert.throws(()=>parseTraining(plan,'workout'),/mínimo/);
  target.goals=[goal('rir','range',0,11)];assert.throws(()=>parseTraining(plan,'workout'),/limites/);
  target.goals=[goal('duration'),goal('duration')];assert.throws(()=>parseTraining(plan,'workout'),/repita/);
