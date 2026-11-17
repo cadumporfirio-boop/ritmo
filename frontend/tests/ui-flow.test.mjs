@@ -27,8 +27,8 @@ function library(dom){return JSON.parse(dom.window.localStorage.getItem('ritmo.t
 test('painel salva ficha, executa etapa, versiona edição e preserva snapshot da sessão',async()=>{
  const {dom,document,errors}=await open();
  try{
-  await click(document,'▤ Meus treinos');
-  await click(document,'Top set + back-offs ↗');
+  await click(document,'▤ Treinos');
+  await click(document,'Criar treino +');await click(document,'Top set + back-offs ↗');
   assert.ok(document.querySelector('training-node-editor training-node-editor'));
   await click(document,'Salvar treino ✓');
   assert.equal(library(dom).workouts[0].title,'Exemplo · top set e back-offs');
@@ -61,7 +61,7 @@ test('painel salva ficha, executa etapa, versiona edição e preserva snapshot d
 test('JSON inválido não substitui biblioteca e uma cópia só é restaurada após confirmação',async()=>{
  const {dom,document,errors}=await open();
  try{
-  await click(document,'▤ Meus treinos');await click(document,'Séries tradicionais ↗');await click(document,'Salvar treino ✓');
+  await click(document,'▤ Treinos');await click(document,'Criar treino +');await click(document,'Séries tradicionais ↗');await click(document,'Salvar treino ✓');
   const original=dom.window.localStorage.getItem('ritmo.training.v2');
   const input=document.querySelector('.import-panel textarea');input.value='{invalid';input.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
   await click(document,'Revisar JSON');assert.equal(dom.window.localStorage.getItem('ritmo.training.v2'),original);
@@ -78,7 +78,7 @@ test('nova ficha pode ser associada à semana sem alterar resultados antigos',as
  const legacy=initialState();const historical=createSession(legacy.week[0],25);historical.completed=true;historical.exercises[0].sets[0]={kg:30,reps:10,rir:2,done:true};legacy.sessions.push(historical);
  const {dom,document,errors}=await open({[legacyKey]:JSON.stringify(legacy)});
  try{
-  await click(document,'▤ Meus treinos');await click(document,'Séries tradicionais ↗');await click(document,'Salvar treino ✓');
+  await click(document,'▤ Treinos');await click(document,'Criar treino +');await click(document,'Séries tradicionais ↗');await click(document,'Salvar treino ✓');
   const assign=[...document.querySelectorAll('button')].find(item=>item.textContent.startsWith('Associar a '));assert.ok(assign);assign.click();await delay();
   const saved=JSON.parse(dom.window.localStorage.getItem(legacyKey));
   assert.deepEqual(saved.sessions,legacy.sessions);assert.equal(saved.week.filter(day=>day.workoutId).length,1);
@@ -92,18 +92,38 @@ test('nova ficha pode ser associada à semana sem alterar resultados antigos',as
 async function selectSport(dom,document,label,value){const select=document.querySelector(`select[aria-label="${label}"]`);assert.ok(select);select.value=value;select.dispatchEvent(new dom.window.Event('change',{bubbles:true}));await delay();}
 test('modalidade filtra modelos e etapas, inclusive blocos internos, e Outra libera opções',async()=>{
  const {dom,document,errors}=await open();try{
- await click(document,'▤ Meus treinos');await selectSport(dom,document,'Modalidade para montar','martial');
- assert.ok(!document.body.textContent.includes('Top set + back-offs ↗'));button(document,'Rounds técnicos ↗');
- await click(document,'Criar treino +');
+ await click(document,'▤ Treinos');await click(document,'Criar treino +');await selectSport(dom,document,'Modalidade para montar','martial');
+ assert.ok(!document.querySelector('app-root').textContent.includes('Top set + back-offs ↗'));button(document,'Rounds técnicos ↗');
+ await click(document,'Começar do zero →');
  const roles=()=>[...document.querySelectorAll('select[aria-label="Tipo de etapa"]')];
  assert.equal(roles().length,1);assert.ok(!roles()[0].querySelector('option[value="top"]'));
  assert.equal(document.querySelector('select[aria-label="Métrica da etapa"]').value,'duration');
  await click(document,'+ Bloco interno');assert.equal(roles().length,2);assert.ok(roles().every(s=>!s.querySelector('option[value="top"]')));
  await selectSport(dom,document,'Modalidade do treino','other');assert.ok(roles().every(s=>s.querySelector('option[value="top"]')));
- await click(document,'Cancelar edição');await selectSport(dom,document,'Modalidade para montar','strength');await click(document,'Top set + back-offs ↗');await click(document,'Salvar treino ✓');
+ await click(document,'Cancelar edição');await click(document,'Criar treino +');await selectSport(dom,document,'Modalidade para montar','strength');await click(document,'Top set + back-offs ↗');await click(document,'Salvar treino ✓');
  const before=structuredClone(library(dom).workouts[0].nodes);
  await click(document,'Editar');await selectSport(dom,document,'Modalidade do treino','martial');
- assert.ok(document.body.textContent.includes('já configurado'));await click(document,'Salvar treino ✓');
+ assert.ok(document.querySelector('app-root').textContent.includes('já configurado'));await click(document,'Salvar treino ✓');
  assert.deepEqual(library(dom).workouts[1].nodes,before);assert.equal(library(dom).workouts[1].sport,'martial');assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});
+
+test('Treinos fica limpa, séries são agrupadas e o editor pode separá-las',async()=>{
+ const {dom,document,errors}=await open();try{
+ await click(document,'▤ Treinos');assert.equal(document.querySelector('h1').textContent,'Treinos');assert.ok(!document.querySelector('app-root').textContent.includes('Escolha uma estrutura'));assert.ok(!document.querySelector('app-root').textContent.includes('Aproveitar uma ficha antiga'));
+ await click(document,'Criar treino +');await click(document,'Séries tradicionais ↗');await click(document,'Salvar treino ✓');await click(document,'Iniciar treino →');
+ assert.equal(document.querySelectorAll('.execution-block').length,1);assert.equal(document.querySelectorAll('.series-entry').length,3);
+ await click(document,'Encerrar e salvar sessão ✓');assert.ok(!document.querySelector('app-root').textContent.includes('Seu histórico nesta biblioteca'));
+ await click(document,'Editar');await click(document,'Separar em etapas');await click(document,'Salvar treino ✓');await click(document,'Iniciar treino →');assert.equal(document.querySelectorAll('.execution-block').length,3);
+ await click(document,'Encerrar e salvar sessão ✓');await click(document,'↗ Histórico');assert.ok(document.querySelector('app-root').textContent.includes('Seu histórico nesta biblioteca'));await click(document,'Consultar');assert.ok(document.querySelector('training-runner'));assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});
+test('análise antiga só é criada quando solicitada e fichas antigas ficam no Histórico',async()=>{
+ const legacy=initialState();const session=createSession(legacy.week[0],25);session.completed=true;legacy.sessions.push(session);
+ const {dom,document,errors}=await open({[legacyKey]:JSON.stringify(legacy)});try{
+ await click(document,'▤ Treinos');assert.ok(!document.querySelector('app-root').textContent.includes('Aproveitar uma ficha antiga'));
+ await click(document,'↗ Histórico');assert.ok(document.querySelector('app-root').textContent.includes('Aproveitar uma ficha antiga'));assert.equal(document.querySelectorAll('app-session-analysis').length,0);
+ await click(document,'Ver análise · '+session.name);assert.equal(document.querySelectorAll('app-session-analysis').length,1);
+ await click(document,'Fechar análise · '+session.name);assert.equal(document.querySelectorAll('app-session-analysis').length,0);assert.deepEqual(errors,[]);
  }finally{dom.window.close();}
 });

@@ -1,7 +1,7 @@
 import {Component,input,output,forwardRef} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {METRICS,ROLES,MODES,step,group,goal,cloneNodes} from './training';
-import type {TrainingNode,Step,Goal,Mode,Metric} from './training';
+import type {TrainingNode,Step,Goal,Mode,Metric,Group} from './training';
 import {profileFor,roleOptions,metricOptions,hasRetainedOptions,createStepForSport,createGroupForSport} from './sport-options';
 
 @Component({selector:'training-node-editor',standalone:true,imports:[FormsModule,forwardRef(()=>TrainingNodeEditor)],template:`
@@ -11,6 +11,7 @@ import {profileFor,roleOptions,metricOptions,hasRetainedOptions,createStepForSpo
    <label>Nome<input [(ngModel)]="node.name" maxlength="150" (ngModelChange)="changed.emit()" [attr.aria-label]="'Nome do item '+(i+1)"></label>
    @if(node.kind==='group'){
     <label>Voltas deste bloco<input type="number" min="1" max="30" step="1" [(ngModel)]="node.repeat" (ngModelChange)="changed.emit()"></label>
+    @if(node.repeat>1 && node.children.length===1 && node.children[0].kind==='step'){<button type="button" class="text-button" (click)="splitSeries(node)">Separar em etapas</button><p class="builder-help">As séries aparecem juntas na execução. Separe para dar metas diferentes a cada uma.</p>}
     <p class="builder-help">A sequência abaixo será executada nesta ordem, em cada volta.</p>
     <training-node-editor [nodes]="node.children" [depth]="depth()+1" [sport]="sport()" (changed)="changed.emit()" />
     <div class="builder-actions"><button type="button" class="secondary" (click)="node.children.push(newStep());changed.emit()">+ Etapa</button>@if(depth()<3){<button type="button" class="secondary" (click)="node.children.push(newGroup());changed.emit()">+ Bloco interno</button>}</div>
@@ -40,6 +41,7 @@ export class TrainingNodeEditor {
  retained(node:Step){return hasRetainedOptions(node,this.sport());}
  newStep(){return createStepForSport(this.sport());}
  newGroup(){return createGroupForSport(this.sport());}
+ splitSeries(node:Group){node.children=Array.from({length:node.repeat},()=>cloneNodes(node.children)).flat();node.repeat=1;this.changed.emit();}
  move(index:number,direction:number){const other=index+direction;if(other<0||other>=this.nodes().length)return;[this.nodes()[index],this.nodes()[other]]=[this.nodes()[other],this.nodes()[index]];this.changed.emit();}
  remove(index:number){this.nodes().splice(index,1);this.changed.emit();}
  duplicate(index:number){this.nodes().splice(index+1,0,cloneNodes([this.nodes()[index]])[0]);this.changed.emit();}
