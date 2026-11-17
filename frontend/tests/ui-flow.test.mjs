@@ -148,7 +148,7 @@ test('blocos, etapas e séries recolhem com resumo atualizado e preservam ediç�
  const {dom,document,errors}=await open();try{
  await click(document,'▤ Treinos');await click(document,'Criar treino +');await click(document,'Séries tradicionais ↗');
  const block=document.querySelector('training-node-editor > details.builder-group');const step=block.querySelector('training-node-editor > details.builder-node');const series=step.querySelector('details.series-fold');
- assert.ok(block.open);assert.ok(step.open);assert.equal(series.open,false);assert.match(series.querySelector('summary').textContent,/Série 1.*Trabalho.*REPS 8–12/);
+ assert.equal(block.open,false);assert.equal(step.open,false);block.querySelector(':scope > summary').click();await delay();step.querySelector(':scope > summary').click();await delay();assert.equal(series.open,false);assert.match(series.querySelector('summary').textContent,/Série 1.*Trabalho.*REPS 8–12/);
  series.querySelector('summary').click();await delay();assert.ok(series.open);
  const role=series.querySelector('select[aria-label="Tipo da série"]');role.value='top';role.dispatchEvent(new dom.window.Event('change',{bubbles:true}));await delay();
  const rir=series.querySelectorAll('.builder-goal')[2];const rule=rir.querySelectorAll('select')[1];rule.value='range';rule.dispatchEvent(new dom.window.Event('change',{bubbles:true}));await delay();
@@ -169,12 +169,27 @@ test('observações unificadas preservam campos antigos e recolher não interfer
  const data=library(dom);const node=data.workouts[0].nodes[0].children[0];node.equipment='Halter de cada lado';node.notes='Descer com controle';
  // Import through the same supported review flow, without changing stored user data.
  const input=document.querySelector('.import-panel textarea');input.value=JSON.stringify(data.workouts[0]);input.dispatchEvent(new dom.window.Event('input',{bubbles:true}));await click(document,'Revisar JSON');
- const step=document.querySelector('training-node-editor training-node-editor > details.builder-node');const notes=step.querySelector('textarea[aria-label="Observações da etapa"]');assert.equal(notes.value,'Halter de cada lado\nDescer com controle');
+ const step=document.querySelector('training-node-editor training-node-editor > details.builder-node');step.closest('details.builder-group').querySelector(':scope > summary').click();await delay();step.querySelector(':scope > summary').click();await delay();const notes=step.querySelector('textarea[aria-label="Observações da etapa"]');assert.equal(notes.value,'Halter de cada lado\nDescer com controle');
  assert.ok(!step.textContent.includes('Equipamento / referência de medição'));notes.click();await delay();assert.ok(step.open);
  notes.value+=' e pausar';notes.dispatchEvent(new dom.window.Event('input',{bubbles:true}));await delay();
  step.querySelector('.fold-close').click();await delay();assert.equal(step.open,false);assert.match(step.querySelector('summary').textContent,/Halter de cada lado.*Descer com controle e pausar/s);
  step.querySelector('summary').click();await delay();assert.ok(step.open);assert.equal(step.querySelector('textarea').value,'Halter de cada lado\nDescer com controle e pausar');
  const series=step.querySelector('details.series-fold');series.querySelector('summary').click();await delay();assert.ok(series.open);series.querySelector('.fold-close').click();await delay();assert.equal(series.open,false);assert.ok(step.open);
  await click(document,'Salvar treino ✓');const saved=library(dom).workouts.at(-1).nodes[0].children[0];assert.equal(saved.equipment,'');assert.equal(saved.notes,'Halter de cada lado\nDescer com controle e pausar');assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});
+
+test('metas de cada série ficam visíveis junto dos campos e reabrir edição recolhe todos os cards',async()=>{
+ const {dom,document,errors}=await open();try{
+ await click(document,'▤ Treinos');await click(document,'Criar treino +');await click(document,'Top set + back-offs ↗');
+ assert.ok([...document.querySelectorAll('.builder-fold,.series-fold')].every(card=>!card.open));
+ const block=document.querySelector('.builder-group');block.querySelector(':scope > summary').click();await delay();
+ await click(document,'Salvar treino ✓');await click(document,'Editar');assert.ok([...document.querySelectorAll('.builder-fold,.series-fold')].every(card=>!card.open));
+ await click(document,'Cancelar edição');await click(document,'Iniciar treino →');
+ const rows=document.querySelectorAll('.series-entry');assert.equal(rows.length,3);
+ assert.match(rows[0].querySelector('.series-grid-row .series-targets').textContent,/Top set.*Reps: 6–8 reps/);
+ assert.match(rows[1].querySelector('.series-grid-row .series-targets').textContent,/Back-off.*Reps: 10–12 reps/);
+ for(const row of rows){const targets=row.querySelector('.series-targets');assert.equal(targets.closest('details'),null);assert.equal(row.querySelector('details').open,false);const input=row.querySelector('input');assert.equal(input.getAttribute('aria-describedby'),targets.id);}
+ assert.deepEqual(errors,[]);
  }finally{dom.window.close();}
 });
