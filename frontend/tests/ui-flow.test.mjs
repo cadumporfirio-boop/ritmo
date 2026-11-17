@@ -88,3 +88,22 @@ test('nova ficha pode ser associada à semana sem alterar resultados antigos',as
   assert.deepEqual(errors,[]);
  }finally{dom.window.close();}
 });
+
+async function selectSport(dom,document,label,value){const select=document.querySelector(`select[aria-label="${label}"]`);assert.ok(select);select.value=value;select.dispatchEvent(new dom.window.Event('change',{bubbles:true}));await delay();}
+test('modalidade filtra modelos e etapas, inclusive blocos internos, e Outra libera opções',async()=>{
+ const {dom,document,errors}=await open();try{
+ await click(document,'▤ Meus treinos');await selectSport(dom,document,'Modalidade para montar','martial');
+ assert.ok(!document.body.textContent.includes('Top set + back-offs ↗'));button(document,'Rounds técnicos ↗');
+ await click(document,'Criar treino +');
+ const roles=()=>[...document.querySelectorAll('select[aria-label="Tipo de etapa"]')];
+ assert.equal(roles().length,1);assert.ok(!roles()[0].querySelector('option[value="top"]'));
+ assert.equal(document.querySelector('select[aria-label="Métrica da etapa"]').value,'duration');
+ await click(document,'+ Bloco interno');assert.equal(roles().length,2);assert.ok(roles().every(s=>!s.querySelector('option[value="top"]')));
+ await selectSport(dom,document,'Modalidade do treino','other');assert.ok(roles().every(s=>s.querySelector('option[value="top"]')));
+ await click(document,'Cancelar edição');await selectSport(dom,document,'Modalidade para montar','strength');await click(document,'Top set + back-offs ↗');await click(document,'Salvar treino ✓');
+ const before=structuredClone(library(dom).workouts[0].nodes);
+ await click(document,'Editar');await selectSport(dom,document,'Modalidade do treino','martial');
+ assert.ok(document.body.textContent.includes('já configurado'));await click(document,'Salvar treino ✓');
+ assert.deepEqual(library(dom).workouts[1].nodes,before);assert.equal(library(dom).workouts[1].sport,'martial');assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});
