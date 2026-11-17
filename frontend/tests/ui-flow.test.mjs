@@ -143,3 +143,22 @@ test('séries por tipo, conclusão do exercício, cores e extras preservam a fic
  await click(document,'Remover série extra');assert.equal(document.querySelectorAll('.series-grid-row').length,3);assert.equal(JSON.stringify(library(dom).active.plan),snapshot);assert.deepEqual(errors,[]);
  }finally{dom.window.close();}
 });
+
+test('blocos, etapas e séries recolhem com resumo atualizado e preservam edição',async()=>{
+ const {dom,document,errors}=await open();try{
+ await click(document,'▤ Treinos');await click(document,'Criar treino +');await click(document,'Séries tradicionais ↗');
+ const block=document.querySelector('training-node-editor > details.builder-group');const step=block.querySelector('training-node-editor > details.builder-node');const series=step.querySelector('details.series-fold');
+ assert.ok(block.open);assert.ok(step.open);assert.equal(series.open,false);assert.match(series.querySelector('summary').textContent,/Série 1.*Trabalho.*REPS 8–12/);
+ series.querySelector('summary').click();await delay();assert.ok(series.open);
+ const role=series.querySelector('select[aria-label="Tipo da série"]');role.value='top';role.dispatchEvent(new dom.window.Event('change',{bubbles:true}));await delay();
+ const rir=series.querySelectorAll('.builder-goal')[2];const rule=rir.querySelectorAll('select')[1];rule.value='range';rule.dispatchEvent(new dom.window.Event('change',{bubbles:true}));await delay();
+ for(const [index,value] of ['1','2'].entries()){const input=series.querySelectorAll('.builder-goal')[2].querySelectorAll('input[type="number"]')[index];input.value=value;input.dispatchEvent(new dom.window.Event('input',{bubbles:true}));await delay();}
+ series.querySelector('summary').click();await delay();assert.equal(series.open,false);assert.match(series.querySelector('summary').textContent,/Top set.*RIR 1–2/);
+ const name=step.querySelector('input[aria-label^="Nome"]');name.value='Supino revisado';name.dispatchEvent(new dom.window.Event('input',{bubbles:true}));await delay();
+ step.querySelector(':scope > summary').click();await delay();assert.equal(step.open,false);assert.match(step.querySelector(':scope > summary').textContent,/Supino revisado.*3 séries/);
+ block.querySelector(':scope > summary').click();await delay();assert.equal(block.open,false);assert.match(block.querySelector(':scope > summary').textContent,/1 volta.*3 registros/);
+ block.querySelector(':scope > summary').click();await delay();assert.equal(step.open,false);step.querySelector(':scope > summary').click();await delay();assert.equal(series.open,false);
+ await click(document,'+ Série');const all=step.querySelectorAll('details.series-fold');assert.equal(all.length,4);assert.ok(all[3].open);assert.equal(all[0].open,false);
+ await click(document,'Salvar treino ✓');const node=library(dom).workouts[0].nodes[0].children[0];assert.equal(node.name,'Supino revisado');assert.equal(node.series[0].role,'top');assert.equal(node.series[0].goals.find(g=>g.metric==='rir').max,2);assert.equal(node.series.length,4);assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});

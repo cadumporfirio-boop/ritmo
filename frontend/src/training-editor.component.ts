@@ -6,7 +6,9 @@ import {profileFor,roleOptions,metricOptions,hasRetainedOptions,createStepForSpo
 
 @Component({selector:'training-node-editor',standalone:true,imports:[FormsModule,forwardRef(()=>TrainingNodeEditor)],template:`
  @for(node of nodes();track node.id;let i=$index){
-  <article class="builder-node" [class.builder-group]="node.kind==='group'">
+  <details class="builder-node builder-fold" [class.builder-group]="node.kind==='group'" [open]="isExpanded(node.id,true)" (toggle)="remember(node.id,$event)">
+   <summary class="builder-fold-summary"><span class="fold-description"><small>{{node.kind==='group'?'BLOCO':'ETAPA'}} {{i+1}}</small><strong>{{node.name || 'Sem nome'}}</strong>@if(node.kind==='group'){<span>{{node.children.length}} itens · {{node.repeat}} {{node.repeat===1?'volta':'voltas'}} · {{seriesCount(node)}} registros no total</span>}@else{<span>{{node.series?.length ?? 1}} {{(node.series?.length ?? 1)===1?'série':'séries'}}@if(node.equipment){ · {{node.equipment}}}</span>@if(node.notes){<span class="fold-instructions">{{node.notes}}</span>}}</span><span class="fold-chevron" aria-hidden="true">⌄</span></summary>
+   <div class="builder-fold-body">
    <div class="builder-node-head"><span>{{node.kind==='group'?'BLOCO':'ETAPA'}} {{i+1}}</span><div class="builder-actions"><button type="button" (click)="move(i,-1)" [disabled]="i===0" aria-label="Mover item para cima">↑</button><button type="button" (click)="move(i,1)" [disabled]="i===nodes().length-1" aria-label="Mover item para baixo">↓</button><button type="button" (click)="duplicate(i)">Duplicar</button><button type="button" class="builder-remove" (click)="remove(i)">Remover</button></div></div>
    <label>Nome<input [(ngModel)]="node.name" maxlength="150" (ngModelChange)="changed.emit()" [attr.aria-label]="'Nome do item '+(i+1)"></label>
    @if(node.kind==='group'){
@@ -20,7 +22,7 @@ import {profileFor,roleOptions,metricOptions,hasRetainedOptions,createStepForSpo
     @if(retained(node)){<p class="builder-help retained-options">Esta etapa já tinha opções de outra modalidade. Elas foram mantidas para preservar sua ficha; você pode ajustá-las ou usar Outra / Misto para exibir todas.</p>}
     <label>Instruções<textarea rows="2" [(ngModel)]="node.notes" maxlength="2000" (ngModelChange)="changed.emit()" placeholder="Cadência, técnica, execução, observações…"></textarea></label>
     @if(node.series && node.series.length>1){<button class="text-button" (click)="separateStep(i,node)">Separar séries em etapas</button>}<div class="builder-actions"><h4>Séries desta etapa</h4><button class="secondary" (click)="addSeries(node)">+ Série</button></div>
-    @for(definition of definitions(node);track definition.id;let si=$index){<section class="series-definition">@if(node.series){<div class="builder-actions"><strong>Série {{si+1}}</strong><button class="text-button" (click)="duplicateSeries(node,si)">Duplicar série</button><button class="text-button" (click)="removeSeries(node,si)" [disabled]="node.series.length===1">Remover série</button></div><label>Tipo da série<select aria-label="Tipo da série" [(ngModel)]="definition.role" (ngModelChange)="changed.emit()">@for(role of roleChoices(definition.role);track role.id){<option [value]="role.id">{{role.label}}</option>}</select></label>}
+    @for(definition of definitions(node);track definition.id;let si=$index){<details class="series-definition series-fold" [open]="isExpanded('series-'+definition.id,false)" (toggle)="remember('series-'+definition.id,$event)"><summary class="builder-fold-summary"><span class="fold-description"><span class="series-summary-title"><strong>Série {{si+1}}</strong><span>{{roleLabel(definition.role)}}</span></span><span class="metric-chips">@for(target of definition.goals;track $index){<span>{{metricSummary(target)}}</span>}@empty{<span>Conclusão manual · sem métricas</span>}</span></span><span class="fold-chevron" aria-hidden="true">⌄</span></summary><div class="series-fold-body">@if(node.series){<div class="builder-actions"><strong>Série {{si+1}}</strong><button class="text-button" (click)="duplicateSeries(node,si)">Duplicar série</button><button class="text-button" (click)="removeSeries(node,si)" [disabled]="node.series.length===1">Remover série</button></div><label>Tipo da série<select aria-label="Tipo da série" [(ngModel)]="definition.role" (ngModelChange)="changed.emit()">@for(role of roleChoices(definition.role);track role.id){<option [value]="role.id">{{role.label}}</option>}</select></label>}
     @if(retained(definition)){<p class="builder-help">Opções já configuradas foram preservadas nesta série.</p>}
     @for(target of definition.goals;track $index;let gi=$index){
      <div class="builder-goal"><div class="builder-two"><label>Métrica<select aria-label="Métrica da etapa" [ngModel]="target.metric" (ngModelChange)="metricChanged(target,$event)">@for(metric of metricChoices(target.metric);track metric.id){<option [value]="metric.id">{{metric.label}} · {{metric.unit}}</option>}</select></label><label>Regra<select [ngModel]="target.mode" (ngModelChange)="modeChanged(target,$event)">@for(mode of modes;track mode.id){<option [value]="mode.id">{{mode.label}}</option>}</select></label></div>
@@ -29,15 +31,22 @@ import {profileFor,roleOptions,metricOptions,hasRetainedOptions,createStepForSpo
     }
     <button type="button" class="secondary" (click)="addMetric(definition)" [disabled]="!canAddMetric(definition)">+ Métrica</button>
     @if(!definition.goals.length){<p class="builder-help">Etapa livre: conclusão manual, sem classificação numérica.</p>}
-    </section>}
+    </div></details>}
    }
-  </article>
+   </div>
+  </details>
  }
 `})
 export class TrainingNodeEditor {
  nodes=input.required<TrainingNode[]>();depth=input(0);sport=input('other');changed=output<void>();
  metrics=METRICS;roles=ROLES;modes=MODES;
  metricList=Object.entries(METRICS).map(([id,definition])=>({id,...definition}));
+ private readonly expanded=new Map<string,boolean>();
+ isExpanded(id:string,fallback:boolean){return this.expanded.get(id)??fallback;}
+ remember(id:string,event:Event){this.expanded.set(id,(event.target as HTMLDetailsElement).open);}
+ roleLabel(role:string){return this.roleChoices(role).find(item=>item.id===role)?.label??role;}
+ metricSummary(target:Goal){const name=({reps:'REPS',load:'Carga',rir:'RIR',rpe:'RPE'} as Partial<Record<Metric,string>>)[target.metric]??METRICS[target.metric].label;const value=target.mode==='record'?'registrar':target.mode==='range'?target.min+'–'+target.max:target.mode==='min'?'≥ '+target.min:target.mode==='max'?'≤ '+target.max:String(target.min);const unit=['reps','rir','rpe'].includes(target.metric)||target.mode==='record'?'':' '+METRICS[target.metric].unit;return name+' '+value+unit+(target.required?'':' · opcional');}
+ seriesCount(node:TrainingNode):number {if(node.kind==='step')return node.series?.length??1;const repeat=Number.isInteger(node.repeat)&&node.repeat>0?Math.min(node.repeat,30):0;return repeat*node.children.reduce((total,child)=>total+this.seriesCount(child),0);}
  profile(){return profileFor(this.sport());}
  roleChoices(current:string){return roleOptions(this.sport(),current);}
  metricChoices(current:Metric){return metricOptions(this.sport(),current);}
@@ -49,7 +58,7 @@ export class TrainingNodeEditor {
  remove(index:number){this.nodes().splice(index,1);this.changed.emit();}
  duplicate(index:number){this.nodes().splice(index+1,0,cloneNodes([this.nodes()[index]])[0]);this.changed.emit();}
  definitions(node:Step){return node.series??[node];}
- addSeries(node:Step){if(!node.series)node.series=[{id:uid(),role:node.role,goals:structuredClone(node.goals)}];if(node.series.length<30)node.series.push({...structuredClone(node.series.at(-1)!),id:uid()});this.changed.emit();}
+ addSeries(node:Step){if(!node.series)node.series=[{id:uid(),role:node.role,goals:structuredClone(node.goals)}];if(node.series.length<30)node.series.push({...structuredClone(node.series.at(-1)!),id:uid()});if(node.series)this.expanded.set('series-'+node.series.at(-1)!.id,true);this.changed.emit();}
  duplicateSeries(node:Step,index:number){if(node.series&&node.series.length<30)node.series.splice(index+1,0,{...structuredClone(node.series[index]),id:uid()});this.changed.emit();}
  removeSeries(node:Step,index:number){if(node.series&&node.series.length>1)node.series.splice(index,1);this.changed.emit();}
  separateStep(index:number,node:Step){const nodes=node.series!.map((series,si)=>{const {series:unused,...base}=node;return {...structuredClone(base),id:uid(),name:node.name+' · série '+(si+1),role:series.role,goals:structuredClone(series.goals)};});this.nodes().splice(index,1,...nodes);this.changed.emit();}
