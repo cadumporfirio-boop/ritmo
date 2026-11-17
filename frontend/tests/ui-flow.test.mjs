@@ -162,3 +162,19 @@ test('blocos, etapas e séries recolhem com resumo atualizado e preservam ediç�
  await click(document,'Salvar treino ✓');const node=library(dom).workouts[0].nodes[0].children[0];assert.equal(node.name,'Supino revisado');assert.equal(node.series[0].role,'top');assert.equal(node.series[0].goals.find(g=>g.metric==='rir').max,2);assert.equal(node.series.length,4);assert.deepEqual(errors,[]);
  }finally{dom.window.close();}
 });
+
+test('observações unificadas preservam campos antigos e recolher não interfere na edição',async()=>{
+ const {dom,document,errors}=await open();try{
+ await click(document,'▤ Treinos');await click(document,'Criar treino +');await click(document,'Séries tradicionais ↗');await click(document,'Salvar treino ✓');
+ const data=library(dom);const node=data.workouts[0].nodes[0].children[0];node.equipment='Halter de cada lado';node.notes='Descer com controle';
+ // Import through the same supported review flow, without changing stored user data.
+ const input=document.querySelector('.import-panel textarea');input.value=JSON.stringify(data.workouts[0]);input.dispatchEvent(new dom.window.Event('input',{bubbles:true}));await click(document,'Revisar JSON');
+ const step=document.querySelector('training-node-editor training-node-editor > details.builder-node');const notes=step.querySelector('textarea[aria-label="Observações da etapa"]');assert.equal(notes.value,'Halter de cada lado\nDescer com controle');
+ assert.ok(!step.textContent.includes('Equipamento / referência de medição'));notes.click();await delay();assert.ok(step.open);
+ notes.value+=' e pausar';notes.dispatchEvent(new dom.window.Event('input',{bubbles:true}));await delay();
+ step.querySelector('.fold-close').click();await delay();assert.equal(step.open,false);assert.match(step.querySelector('summary').textContent,/Halter de cada lado.*Descer com controle e pausar/s);
+ step.querySelector('summary').click();await delay();assert.ok(step.open);assert.equal(step.querySelector('textarea').value,'Halter de cada lado\nDescer com controle e pausar');
+ const series=step.querySelector('details.series-fold');series.querySelector('summary').click();await delay();assert.ok(series.open);series.querySelector('.fold-close').click();await delay();assert.equal(series.open,false);assert.ok(step.open);
+ await click(document,'Salvar treino ✓');const saved=library(dom).workouts.at(-1).nodes[0].children[0];assert.equal(saved.equipment,'');assert.equal(saved.notes,'Halter de cada lado\nDescer com controle e pausar');assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});
