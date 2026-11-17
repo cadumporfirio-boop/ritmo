@@ -1,10 +1,34 @@
-# Ritmo — versão 0.2.0
+# Ritmo — versão 0.3.0
 
-Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.2.0.
+Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.3.0.
 
 ![Interface do Ritmo](preview.png)
 
 O projeto demonstra planejamento semanal, registro por série e revisão de sessões. A integração real com IA ainda não está ativa.
+
+## Novidades da versão 0.3.0
+
+O painel **Meus treinos** permite criar, editar, duplicar, ordenar e importar fichas com blocos aninhados e etapas. Cada etapa tem suas métricas: repetições, carga, RIR, RPE, tempo em segundos, distância em metros, frequência cardíaca, potência, cadência e ritmo em segundos/km. Metas podem ser exatas, faixas, mínimos, máximos ou apenas registro. Os modelos de séries, top set/back-offs, circuitos, intervalos e rounds são exemplos editáveis, não prescrições personalizadas.
+
+### Decisões de arquitetura
+
+- O contrato versionado está em `contracts/training.schema.json`, validado por Ajv no Angular e Opis JSON Schema no PHP. Unidades ficam explícitas e são normalizadas por métrica.
+- Blocos repetem sequências e podem conter outros blocos. O motor expande a ordem de execução, com limite de 4 níveis e 300 etapas por sessão para evitar crescimento acidental.
+- Fichas são versionadas. Uma sessão recebe uma cópia da versão usada; editar a biblioteca não altera sessões em andamento ou históricas. O backend recusa reescrita de versões existentes.
+- Resultados são separados das metas. Campos vazios, etapas não realizadas e metas opcionais ausentes não viram sucesso automaticamente.
+- O fluxo antigo permanece compatível, sem migração destrutiva. É possível copiar a estrutura de uma sessão antiga para o editor; as anotações originais são preservadas.
+- A biblioteca nova fica na chave local `ritmo.training.v2`; o histórico antigo usa sua chave original. Exportação e restauração da biblioteca exigem validação e confirmação. Uma alteração concorrente em outra aba bloqueia gravações silenciosas.
+- A estrutura usa os mesmos princípios de etapas, duração, metas e repetições documentados no [Garmin FIT](https://developer.garmin.com/fit/articles/file-types/workout.html) e no [TrainingPeaks](https://help.trainingpeaks.com/hc/en-us/articles/235164967-Structured-Workout-Builder), sem implementar importação FIT ou integração com esses serviços.
+
+### API e limites atuais
+
+Os endpoints privados `GET/PUT /api/training` validam e armazenam a biblioteca do piloto, separados do histórico antigo, com controle de revisão. `POST /api/training/validate` valida uma ficha pelo mesmo contrato. A interface pública ainda salva localmente e não está conectada a esses endpoints. Não há conta multiusuário, sincronização em nuvem, cronômetro, sensores, geração por IA ou periodização automática. PHP 8.4 é necessário.
+
+Para começar, abra **Meus treinos**, escolha uma estrutura ou crie uma ficha, revise as metas e salve. É possível iniciar pela biblioteca ou associar ao dia selecionado. Uma sessão antiga em andamento deve ser finalizada antes de iniciar outra. As sessões estruturadas são consultadas na própria biblioteca.
+
+### Validação
+
+Execute `npm run build`, `npm run test:domain` e `npm run test:ui` em `frontend`; em `backend`, execute `php vendor/phpunit/phpunit/phpunit`. Os testes de interface usam DOM isolado, sem dados reais e sem substituir inspeção visual em navegador.
 
 ## Novidades da versão 0.2.0
 

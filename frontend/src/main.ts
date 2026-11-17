@@ -1,13 +1,17 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { Component, signal, computed, effect } from '@angular/core';
+import { Component, signal, computed, effect, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AnalysisComponent } from './analysis.component';
 import { analysisReport, assessSeries, exerciseAssessment } from './analytics';
 import { initialState, restore, createSession, validSet, summarize, finishSession, isExtraSeries, removeExtraSeries, exerciseCompleted, setExerciseCompletion } from './domain';
 import type { State, Activity, Series, Exercise } from './domain';
+import {TrainingPanel} from './training-panel.component';
+import {TrainingStore} from './training.store';
+import type {Workout} from './training';
 
-@Component({selector:'app-root',standalone:true,imports:[FormsModule,AnalysisComponent],templateUrl:'./app.html'})
+@Component({selector:'app-root',standalone:true,imports:[FormsModule,AnalysisComponent,TrainingPanel],templateUrl:'./app.html'})
 class App {
+  readonly training=inject(TrainingStore);
   readonly state = signal<State>(initialState());
   readonly tab = signal('today');
   readonly view = signal<'home'|'workout'|'review'>('home');
@@ -38,7 +42,9 @@ class App {
   selectDay(index:number){this.selection.set(index);this.minutes=this.activity().minutes||30;}
   start(){
     if(this.state().active){this.view.set('workout');return;}
+    if(this.training.data().active){this.training.screen.set('run');this.navigate('training');return;}
     if(this.activity().type==='rest'){this.notify('Dia reservado para descanso e seus compromissos. Você pode editar a semana.');return;}
+    if(this.activity().workoutId){try{this.training.start(this.activity().workoutId!);this.navigate('training');}catch(error){this.notify(error instanceof Error?error.message:'Não foi possível abrir esta ficha.');}return;}
     const session=createSession(this.activity(),this.minutes);
     for(const exercise of session.exercises){
       const previous=[...this.state().sessions].reverse().flatMap(s=>s.exercises).find(e=>e.name===exercise.name);
@@ -67,5 +73,7 @@ class App {
   removeSeries(exercise:Exercise,index:number){const session=this.state().active;if(!session)return;const set=removeExtraSeries(exercise,index);if(!set)return;this.removedSeries={sessionId:session.id,exerciseId:exercise.id,index,set};this.touch();this.notify('Série extra removida. Você pode desfazer.');}
   undoSeries(){const removed=this.removedSeries;const session=this.state().active;if(!removed||session?.id!==removed.sessionId)return;const exercise=session.exercises.find(e=>e.id===removed.exerciseId);if(!exercise||exercise.sets.length>=20){this.notify('Não há espaço para restaurar a série.');return;}exercise.sets.splice(Math.min(removed.index,exercise.sets.length),0,removed.set);this.removedSeries=null;this.touch();this.notify('Série restaurada com suas anotações.');}
   exportAnalysis(){const blob=new Blob([JSON.stringify(analysisReport(this.state().sessions),null,2)],{type:'application/json'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='ritmo-analises.json';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),500);}
+  assignWorkout(plan:Workout){this.state.update(state=>{const week=structuredClone(state.week);week[this.selection()]={...week[this.selection()],name:plan.title,type:plan.sport==='strength'?'strength':'sport',workoutId:plan.id};return {...state,week};});this.notify(`Ficha associada a ${this.activity().day}. As próximas sessões usarão a versão mais recente.`);}
+  unlinkWorkout(index:number){this.state.update(state=>{const week=structuredClone(state.week);delete week[index].workoutId;return {...state,week};});this.notify('Ficha desvinculada deste dia.');}
 }
 bootstrapApplication(App).catch(console.error);

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\StateController;
+use App\Http\Controllers\TrainingController;
 use App\Http\Middleware\OwnerToken;
 use Illuminate\Support\Facades\Route;
 
@@ -12,4 +13,7 @@ Route::post('/planning', fn () => response()->json([
 Route::middleware(OwnerToken::class)->group(function () {
     Route::get('/state', [StateController::class, 'show']);
     Route::put('/state', [StateController::class, 'update']);
+    Route::get('/training', [TrainingController::class, 'show']);
+    Route::put('/training', [TrainingController::class, 'update']);
+    Route::post('/training/validate', [TrainingController::class, 'validateWorkout']);
 });

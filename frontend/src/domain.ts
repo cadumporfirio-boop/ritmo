@@ -1,7 +1,7 @@
 export interface Series { kg: number | null; reps: number | null; rir: number | null; done: boolean }
 export interface Exercise { id: string; name: string; detail: string; target: string; previous: string; sets: Series[]; metrics?: { key: string; loadBasis: string; setType: string; repMin: number; repMax: number } }
 export interface Session { id: string; date: string; name: string; minutes: number; exercises: Exercise[]; note: string; completed: boolean }
-export interface Activity { day: string; name: string; time: string; type: 'strength' | 'sport' | 'cardio' | 'rest'; minutes: number }
+export interface Activity { day: string; name: string; time: string; type: 'strength' | 'sport' | 'cardio' | 'rest'; minutes: number; workoutId?:string }
 export interface Profile { name: string; goal: string; experience: string; equipment: string; autonomy: boolean }
 export interface State { version: 1; profile: Profile; week: Activity[]; sessions: Session[]; active: Session | null }
 export const PLANNED_SERIES_COUNT = 3;
