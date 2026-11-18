@@ -1,12 +1,24 @@
-# Ritmo — versão 0.3.0
+# Ritmo — versão 0.4.0
 
-Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.3.0.
+Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.4.0.
 
 ![Interface do Ritmo](preview.png)
 
 O projeto demonstra planejamento semanal, registro por série e revisão de sessões. A integração real com IA ainda não está ativa.
 
-## Novidades da versão 0.3.0
+## Novidades da versão 0.4.0
+
+Em **Minha semana → Planejamento de ciclos**, o planejamento é uma camada temporal acima das fichas. O motor em `frontend/src/planning.ts` distribui sessões independentes, copia intervalos e permite ajustar cada ocorrência. Modelo e estímulo são identificações livres: não determinam automaticamente séries, faixas, cargas ou deload.
+
+- Duração de 1 a 730 dias e até 500 sessões. Macro, meso, micro, fase e agrupamentos livres são opcionais; um microciclo não precisa ter sete dias. Períodos pais delimitam apenas a posição dos filhos.
+- Contexto de objetivo, experiência, disponibilidade, prioridades e recuperação. Estratégias de progressão têm condições e ações e podem ser combinadas por exercício; sua aplicação continua manual.
+- O editor por sessão permite variar exercícios, ordem, séries, repetições, carga, RIR/RPE, descanso em segundos e percentual de 1RM. Percentuais não são convertidos automaticamente para kg.
+- Cada sessão iniciada conserva o plano resolvido e sua origem: identificador, versão e dia do planejamento. Alterações futuras não reescrevem esse registro.
+- A distribuição por músculos principais usa apenas atribuições explícitas. Não infere músculos nem adequação do volume. Aquecimento, recuperação e desaquecimento são contabilizados separadamente.
+- Contrato independente em `contracts/planning.schema.json`. Biblioteca local em `ritmo.planning.v1`, com versões, cópia anterior, importação revisada e proteção contra gravação concorrente. Rascunhos permanecem em memória ao trocar de tela; salve ou exporte antes de recarregar.
+- O planejamento ainda não possui persistência PHP, sincronização ou IA. O PHP reconhece as novas métricas e protege a origem das sessões históricas no contrato de treino.
+
+## Estrutura de treinos da versão 0.3.0
 
 O painel **Meus treinos** permite criar, editar, duplicar, ordenar e importar fichas com blocos aninhados e etapas. Cada etapa tem suas métricas: repetições, carga, RIR, RPE, tempo em segundos, distância em metros, frequência cardíaca, potência, cadência e ritmo em segundos/km. Metas podem ser exatas, faixas, mínimos, máximos ou apenas registro. Os modelos de séries, top set/back-offs, circuitos, intervalos e rounds são exemplos editáveis, não prescrições personalizadas.
 

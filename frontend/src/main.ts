@@ -5,15 +5,17 @@ import { AnalysisComponent } from './analysis.component';
 import { analysisReport, assessSeries, exerciseAssessment } from './analytics';
 import { initialState, restore, createSession, validSet, summarize, finishSession, isExtraSeries, removeExtraSeries, exerciseCompleted, setExerciseCompletion } from './domain';
 import type { State, Activity, Series, Exercise } from './domain';
+import {PlanningPanel} from './planning-panel.component';
 import {TrainingPanel} from './training-panel.component';
 import {TrainingStore} from './training.store';
 import type {Workout} from './training';
 
-@Component({selector:'app-root',standalone:true,imports:[FormsModule,AnalysisComponent,TrainingPanel],templateUrl:'./app.html'})
+@Component({selector:'app-root',standalone:true,imports:[FormsModule,AnalysisComponent,TrainingPanel,PlanningPanel],templateUrl:'./app.html'})
 class App {
   readonly training=inject(TrainingStore);
   readonly state = signal<State>(initialState());
   readonly tab = signal('today');
+  readonly planningView=signal(false);
   readonly openAnalysis=signal<string|null>(null);
   readonly view = signal<'home'|'workout'|'review'>('home');
   readonly toast = signal('');

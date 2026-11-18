@@ -9,7 +9,7 @@
       <button [class.active]="tab()==='history'" (click)="navigate('history')"><span>↗</span> Histórico</button>
       <button [class.active]="tab()==='profile'" (click)="navigate('profile')"><span>⚙</span> Meu perfil</button>
     </nav>
-    <div class="sidebar-bottom"><div class="tiny-orbit">✳</div><h3>Menos planejamento.<br>Mais movimento.</h3><p>Um passo de cada vez, no seu ritmo.</p><span class="version">TREINOS ESTRUTURADOS · 0.3</span></div>
+    <div class="sidebar-bottom"><div class="tiny-orbit">✳</div><h3>Menos planejamento.<br>Mais movimento.</h3><p>Um passo de cada vez, no seu ritmo.</p><span class="version">PLANEJAMENTO FLEXÍVEL · 0.4</span></div>
     <button class="user" (click)="navigate('profile')"><span class="avatar">{{state().profile.name.slice(0,1).toUpperCase() || 'V'}}</span><span>{{state().profile.name || 'Seu perfil'}}<small>Objetivo: reduzir gordura</small></span><span>⌄</span></button>
   </aside>
   <main>
@@ -28,9 +28,11 @@
       }
       @if(tab()==='training'){<app-training-panel [selectedDay]="activity().day" [legacyBusy]="!!state().active" [legacy]="state().sessions" (assigned)="assignWorkout($event)" />}
       @if(tab()==='week'){
+        <div class="planning-view-tabs" role="group" aria-label="Organização do treino"><button class="secondary" [class.selected]="!planningView()" (click)="planningView.set(false)">Rotina semanal</button><button class="secondary" [class.selected]="planningView()" (click)="planningView.set(true)">Planejamento de ciclos</button></div>
+        @if(planningView()){<app-planning-panel [legacyBusy]="!!state().active" (started)="navigate('training')" />}@else{
         <section class="page-heading"><div><p class="eyebrow">PLANEJAMENTO</p><h1>Uma semana possível<span>.</span></h1><p>Sua rotina de referência. Ajuste conforme a vida acontece.</p></div><button class="primary" (click)="editing=!editing">{{editing?'Fechar edição':'Editar semana'}}</button></section>
         <section class="panel schedule">@for(day of state().week;track day.day;let i=$index){<div class="schedule-row"><b class="schedule-day">{{day.day}}</b><span class="activity-dot" [class.rest]="day.type==='rest'"></span>@if(editing){<div class="schedule-fields"><label>Atividade<input [(ngModel)]="day.name" (ngModelChange)="touch()"></label><label>Horário<input type="time" [(ngModel)]="day.time" (ngModelChange)="touch()"></label><label>Tipo<select [(ngModel)]="day.type" (ngModelChange)="touch()"><option value="strength">Musculação</option><option value="sport">Esporte</option><option value="cardio">Cardio</option><option value="rest">Descanso / compromisso</option></select></label></div>}@else{<div class="schedule-name"><strong>{{day.name}}</strong><small>{{day.type==='rest'?'Compromisso pessoal / recuperação':day.minutes+' min previstos'}}</small></div><span class="schedule-time">{{day.time || 'Livre'}}</span><button class="secondary compact" (click)="selectDay(i);navigate('today')">Abrir</button><button class="icon-button" (click)="moveDay(i)" [attr.aria-label]="'Trocar '+day.day+' com o dia seguinte'" title="Trocar com o dia seguinte">⇄</button>@if(day.workoutId){<button class="text-button" (click)="unlinkWorkout(i)">Desvincular</button>}}</div>}@if(editing){<button class="primary" (click)="saveWeek()">Salvar semana</button>}@if(backup){<button class="secondary" (click)="undo()">Desfazer última troca</button>}</section><p class="footnote">Trocas são feitas por você nesta versão. A reorganização automática com IA será conectada em uma próxima etapa.</p>
-      }
+      }}
       @if(tab()==='history'){
         <section class="page-heading"><div><p class="eyebrow">SEU PERCURSO</p><h1>Histórico</h1></div><button class="secondary" (click)="exportData()">Exportar meus dados ↗</button></section>
         <button class="secondary export-analysis" (click)="exportAnalysis()">Exportar análises para consulta futura ↗</button>

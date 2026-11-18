@@ -28,6 +28,7 @@ export class TrainingStore {
   }catch(error){this.error.set(error instanceof Error?error.message:'Não foi possível salvar. Exporte uma cópia.');}
  }
  save(plan:Workout):Workout {if(this.blocked)throw Error(this.error()||'Restaure uma cópia válida antes de salvar.');const saved=saveRevision(this.data(),plan);this.touch();if(this.error())throw Error(this.error());return saved;}
+ startPlanned(plan:Workout,origin:NonNullable<TrainingSession['planning']>):void {if(this.blocked||this.error())throw Error(this.error()||'Armazenamento indisponível.');if(this.data().active)throw Error('Finalize a sessão em andamento antes de iniciar a planejada.');const previous=this.data();this.data.set({...previous,active:{...startStructured(plan),planning:structuredClone(origin)}});this.touch();if(this.error()){this.data.set(previous);throw Error(this.error());}this.screen.set('run');}
  start(id:string):void {
   if(this.data().active){this.screen.set('run');return;}
   const plan=latestWorkouts(this.data()).find(item=>item.id===id);

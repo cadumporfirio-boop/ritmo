@@ -59,7 +59,7 @@ class TrainingContract
         }
         foreach ($previous->sessions ?? [] as $old) {
             $found = array_find($next->sessions, fn (stdClass $session): bool => $session->id === $old->id);
-            if ($found === null || $found->plan != $old->plan) {
+            if ($found === null || $found->plan != $old->plan || ($found->planning ?? null) != ($old->planning ?? null)) {
                 $this->fail('A ficha de uma sessão histórica deve ser preservada.');
             }
         }
@@ -225,6 +225,7 @@ class TrainingContract
     private function metricValid(string $metric, mixed $value): bool
     {
         $limits = [
+            'rest' => [0, 86400, false], 'percent1rm' => [0.01, 150, false],
             'reps' => [0, 1000, true], 'load' => [0, 2000, false],
             'rir' => [0, 10, true], 'rpe' => [0, 10, false],
             'duration' => [0.01, 86400, false], 'distance' => [0.01, 1000000, false],

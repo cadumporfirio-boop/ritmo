@@ -193,3 +193,27 @@ test('metas de cada série ficam visíveis junto dos campos e reabrir edição r
  assert.deepEqual(errors,[]);
  }finally{dom.window.close();}
 });
+
+async function fillPlanning(dom,document,label,value){const input=document.querySelector(`[aria-label="${label}"]`);assert.ok(input,`Campo não encontrado: ${label}`);input.value=String(value);input.dispatchEvent(new dom.window.Event(input.tagName==='SELECT'?'change':'input',{bubbles:true}));await delay();}
+async function enterPlanning(document){await click(document,'▦ Minha semana');await click(document,'Planejamento de ciclos');}
+test('planejador copia semanas independentes e preserva origem da sessão ao salvar nova versão',async()=>{
+ const {dom,document,errors}=await open();try{
+ await click(document,'▤ Treinos');await click(document,'Criar treino +');await click(document,'Top set + back-offs ↗');await click(document,'Salvar treino ✓');const base=JSON.stringify(library(dom).workouts);
+ await enterPlanning(document);await click(document,'Criar planejamento +');await fillPlanning(dom,document,'Nome do planejamento','Ciclo flexível');await fillPlanning(dom,document,'Objetivo do planejamento','Prioridade informada pelo usuário');await fillPlanning(dom,document,'Dias por visualização',9);
+ await click(document,'Adicionar ao planejamento +');await fillPlanning(dom,document,'Nome da sessão planejada','Upper');await fillPlanning(dom,document,'Estímulo da sessão','Força');await click(document,'⚙ Meu perfil');await enterPlanning(document);assert.equal(document.querySelector('[aria-label="Nome da sessão planejada"]').value,'Upper');await click(document,'Aplicar sessão ✓');
+ await click(document,'Copiar intervalo');assert.equal(document.querySelectorAll('.planning-slot').length,2);document.querySelectorAll('.planning-slot-open')[1].click();await delay();await fillPlanning(dom,document,'Nome da sessão planejada','All Day');await fillPlanning(dom,document,'Estímulo da sessão','Hipertrofia');await click(document,'Aplicar sessão ✓');await click(document,'Salvar planejamento ✓');
+ const saved=JSON.parse(dom.window.localStorage.getItem('ritmo.planning.v1'))[0];assert.equal(saved.slots[0].stimulus,'Força');assert.equal(saved.slots[1].stimulus,'Hipertrofia');assert.equal(saved.slots[1].day,8);assert.equal(saved.periods.length,0);assert.equal(JSON.stringify(library(dom).workouts),base);
+ await click(document,'Iniciar →');assert.ok(document.querySelector('training-runner'));assert.equal(library(dom).active.planning.programRevision,1);assert.equal(library(dom).active.plan.title,'Upper');const active=JSON.stringify(library(dom).active);
+ await enterPlanning(document);await click(document,'Abrir planejamento →');await fillPlanning(dom,document,'Nome do planejamento','Ciclo revisado');await click(document,'Salvar planejamento ✓');assert.equal(JSON.parse(dom.window.localStorage.getItem('ritmo.planning.v1')).length,2);assert.equal(JSON.stringify(library(dom).active),active);
+ await click(document,'Iniciar →');assert.match(document.querySelector('app-planning-panel .training-message').textContent,/em andamento/);assert.equal(JSON.stringify(library(dom).active),active);assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});
+test('planejamento inválido, cópia revisada e conflito entre abas preservam dados',async()=>{
+ const {dom,document,errors}=await open();try{
+ await enterPlanning(document);await click(document,'Criar planejamento +');await click(document,'Salvar planejamento ✓');assert.equal(dom.window.localStorage.getItem('ritmo.planning.v1'),null);
+ await fillPlanning(dom,document,'Objetivo do planejamento','Objetivo');await click(document,'Salvar planejamento ✓');await click(document,'Fechar planejamento');const raw=dom.window.localStorage.getItem('ritmo.planning.v1');
+ await fillPlanning(dom,document,'Importar planejamento JSON','{invalid');await click(document,'Revisar planejamento importado');assert.equal(dom.window.localStorage.getItem('ritmo.planning.v1'),raw);
+ const archive=JSON.parse(raw);archive[0].id='archive-program';archive[0].title='Cópia independente';await fillPlanning(dom,document,'Importar planejamento JSON',JSON.stringify(archive));await click(document,'Revisar planejamento importado');assert.equal(dom.window.localStorage.getItem('ritmo.planning.v1'),raw);await click(document,'Adicionar versões da cópia');assert.equal(JSON.parse(dom.window.localStorage.getItem('ritmo.planning.v1')).length,2);assert.equal(dom.window.localStorage.getItem('ritmo.planning.v1.previous'),raw);
+ await click(document,'Abrir planejamento →');await fillPlanning(dom,document,'Nome do planejamento','Edição local');const external=dom.window.localStorage.getItem('ritmo.planning.v1')+' ';dom.window.localStorage.setItem('ritmo.planning.v1',external);await click(document,'Salvar planejamento ✓');assert.equal(dom.window.localStorage.getItem('ritmo.planning.v1'),external);assert.match(document.querySelector('app-planning-panel .training-message').textContent,/Outra aba/);assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});

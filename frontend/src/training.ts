@@ -2,7 +2,7 @@ import Ajv from 'ajv';
 import schema from '../../contracts/training.schema.json' with {type:'json'};
 import type {Session as LegacySession} from './domain.ts';
 
-export type Metric = 'reps'|'load'|'rir'|'rpe'|'duration'|'distance'|'heartRate'|'power'|'cadence'|'pace';
+export type Metric = 'rest'|'percent1rm'|'reps'|'load'|'rir'|'rpe'|'duration'|'distance'|'heartRate'|'power'|'cadence'|'pace';
 export type Mode = 'record'|'range'|'min'|'max'|'exact';
 export interface Goal {metric:Metric;mode:Mode;required:boolean;min?:number;max?:number}
 export interface TrainingSeries {id:string;role:string;goals:Goal[]}
@@ -11,11 +11,12 @@ export interface Group {kind:'group';id:string;name:string;repeat:number;childre
 export type TrainingNode=Step|Group;
 export interface Workout {kind:'workout';schemaVersion:2;id:string;revision:number;title:string;sport:string;notes:string;nodes:TrainingNode[]}
 export interface Entry {key:string;stepId:string;values:Partial<Record<Metric,number>>;done:boolean;skipped:boolean;note:string;extra?:{afterKey:string;role:string;goals:Goal[]}}
-export interface TrainingSession {kind:'session';schemaVersion:2;id:string;date:string;plan:Workout;entries:Entry[];completed:boolean;note:string}
+export interface TrainingSession {kind:'session';schemaVersion:2;id:string;date:string;plan:Workout;entries:Entry[];completed:boolean;note:string;planning?:{programId:string;programRevision:number;slotId:string;day:number;programTitle:string;stimulus:string}}
 export interface TrainingLibrary {kind:'library';schemaVersion:2;workouts:Workout[];sessions:TrainingSession[];active:TrainingSession|null}
 export interface ExpandedStep {key:string;step:Step;trail:string;occurrence?:string}
 export const MAX_EXPANDED_STEPS=300;
 export const METRICS:Record<Metric,{label:string;unit:string;min:number;max:number;integer?:boolean}>={
+ rest:{label:'Descanso',unit:'segundos',min:0,max:86400},percent1rm:{label:'Percentual de 1RM',unit:'% 1RM',min:0.01,max:150},
  reps:{label:'Repetições',unit:'reps',min:0,max:1000,integer:true},load:{label:'Carga',unit:'kg',min:0,max:2000},
  rir:{label:'Repetições em reserva',unit:'RIR',min:0,max:10,integer:true},rpe:{label:'Esforço percebido',unit:'RPE 0–10',min:0,max:10},
  duration:{label:'Tempo',unit:'segundos',min:0.01,max:86400},distance:{label:'Distância',unit:'metros',min:0.01,max:1000000},

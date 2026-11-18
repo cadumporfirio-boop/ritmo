@@ -6,6 +6,7 @@ import type {TrainingSession,Entry,Metric,ExpandedStep} from './training';
 
 @Component({selector:'training-runner',standalone:true,imports:[FormsModule],template:`
  <section class="page-heading"><div><p class="eyebrow">{{readonly()?'HISTÓRICO · FICHA PRESERVADA':'EXECUÇÃO DO TREINO'}}</p><h1>{{session().plan.title}}<span>.</span></h1><p>Versão {{session().plan.revision}} · {{confirmed()}}/{{session().entries.length}} etapas registradas · {{skipped()}} não realizadas</p></div><button class="secondary" (click)="back.emit()">Voltar ↗</button></section>
+ @if(session().planning;as origin){<p class="notice">{{origin.programTitle}} · v{{origin.programRevision}} · dia {{origin.day}} @if(origin.stimulus){· {{origin.stimulus}}}</p>}
  @if(session().plan.notes){<p class="notice">{{session().plan.notes}}</p>}
  @for(block of blocks();track block.key;let bi=$index){@let first=block.items[0].item.step;@let status=blockStatus(block.items);
  <section class="panel execution-block" [attr.data-exercise-tone]="status.tone"><div class="exercise-heading"><span class="exercise-number">{{bi+1<10?'0':''}}{{bi+1}}</span><div><h2>{{first.name}}</h2><p>{{block.items.length}} {{session().plan.sport==='martial'?'rounds':'séries'}} @if(first.equipment){· {{first.equipment}}}</p></div></div>

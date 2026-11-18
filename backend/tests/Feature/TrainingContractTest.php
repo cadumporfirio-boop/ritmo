@@ -143,4 +143,32 @@ class TrainingContractTest extends TestCase
         $step->series[] = clone $step->series[0];
         $this->withToken($this->token)->postJson('/api/training/validate', (array) $plan)->assertUnprocessable();
     }
+
+    public function test_rest_and_relative_load_have_independent_limits_and_units(): void
+    {
+        $plan = $this->workout();
+        $plan->nodes[0]->children[0]->goals = [
+            (object) ['metric' => 'rest', 'mode' => 'range', 'required' => false, 'min' => 0, 'max' => 180],
+            (object) ['metric' => 'percent1rm', 'mode' => 'range', 'required' => false, 'min' => 70, 'max' => 85],
+        ];
+        $this->withToken($this->token)->postJson('/api/training/validate', (array) $plan)->assertOk();
+        $plan->nodes[0]->children[0]->goals[1]->min = 0.005;
+        $this->withToken($this->token)->postJson('/api/training/validate', (array) $plan)->assertUnprocessable();
+        $plan->nodes[0]->children[0]->goals[1]->min = 70;
+        $plan->nodes[0]->children[0]->goals[0]->min = -1;
+        $this->withToken($this->token)->postJson('/api/training/validate', (array) $plan)->assertUnprocessable();
+    }
+
+    public function test_historical_planning_origin_cannot_be_rewritten(): void
+    {
+        $library = $this->library();
+        $session = (object) ['kind' => 'session', 'schemaVersion' => 2, 'id' => 'planned-session', 'date' => '2026-11-18T10:00:00.000Z', 'plan' => $library->workouts[0], 'entries' => [
+            (object) ['key' => '0r0/0', 'stepId' => 'step-a', 'values' => (object) [], 'done' => false, 'skipped' => false, 'note' => ''],
+            (object) ['key' => '0r1/0', 'stepId' => 'step-a', 'values' => (object) [], 'done' => false, 'skipped' => false, 'note' => ''],
+        ], 'completed' => true, 'note' => '', 'planning' => (object) ['programId' => 'program-one', 'programRevision' => 1, 'slotId' => 'slot-one', 'day' => 9, 'programTitle' => 'Microciclo livre', 'stimulus' => 'Técnica']];
+        $library->sessions = [$session];
+        $this->withToken($this->token)->putJson('/api/training', ['revision' => 0, 'library' => $library])->assertOk();
+        $session->planning->programRevision = 2;
+        $this->withToken($this->token)->putJson('/api/training', ['revision' => 1, 'library' => $library])->assertUnprocessable();
+    }
 }
