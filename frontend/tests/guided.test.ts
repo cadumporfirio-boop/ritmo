@@ -1,0 +1,18 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {newGuide,routineFromWorkout,buildGuidedProgram,resizeQuickSeries,quickScheme,setQuickBound,seriesGroups,sharedBound,setGuideWeeks} from '../src/guided.ts';
+import {newProgram,steps,validateProgram} from '../src/planning.ts';
+import {preset,startStructured,parseTraining,uid} from '../src/training.ts';
+function fixture(){const program=newProgram();program.context.objective='Planejamento escolhido pelo usuário';program.guided=newGuide();const routine=routineFromWorkout(preset('topback'),2,program.guided);program.guided.routines.push(routine);routine.name='LOWER — QUARTA';routine.sequence=[0,1,2,0,2,1].map(index=>program.guided!.approaches[index].id);return {program,routine};}
+test('montagem guiada representa 123132 sem inferir metas pelos nomes ou criar resultados',()=>{
+ const {program,routine}=fixture();const built=buildGuidedProgram(program);validateProgram(built);assert.deepEqual(built.slots.map(slot=>slot.stimulus),['Força','Hipertrofia','Volume','Força','Volume','Hipertrofia']);assert.deepEqual(built.slots.map(slot=>slot.day),[3,10,17,24,31,38]);assert.equal(built.periods.length,0);assert.equal(built.durationDays,42);assert.deepEqual(steps(routine.variants[0].workout.nodes)[0].series![0].goals,steps(routine.variants[1].workout.nodes)[0].series![0].goals);assert.ok(startStructured(built.slots[0].workout).entries.every(entry=>!entry.done&&Object.keys(entry.values).length===0));
+});
+test('metas por abordagem e tipo de série preservam variantes e ficha base',()=>{
+ const {program,routine}=fixture(),source=JSON.stringify(routine.variants[1]),exercise=steps(routine.variants[0].workout.nodes)[0];resizeQuickSeries(exercise,4);quickScheme(exercise,'topback');const groups=seriesGroups(exercise);assert.deepEqual(groups.map(group=>group.definitions.length),[1,3]);setQuickBound(groups[0].definitions,'reps','min',5);setQuickBound(groups[0].definitions,'reps','max',8);setQuickBound(groups[1].definitions,'reps','min',6);setQuickBound(groups[1].definitions,'reps','max',8);setQuickBound(groups[1].definitions,'rir','min',0);setQuickBound(groups[1].definitions,'rir','max',1);assert.equal(JSON.stringify(routine.variants[1]),source);const built=buildGuidedProgram(program);validateProgram(built);assert.equal(startStructured(built.slots[0].workout).entries.length,4);assert.equal(startStructured(built.slots[1].workout).entries.length,3);assert.equal(sharedBound(groups[1].definitions,'rir','min'),0);
+});
+test('alterar semanas exige escolhas explícitas e datas respeitam o dia real da semana',()=>{
+ const {program,routine}=fixture();program.startDate='2026-11-19';const built=buildGuidedProgram(program);assert.equal(built.slots[0].day,7);assert.equal(built.slots[5].day,42);setGuideWeeks(program.guided!,7);assert.equal(routine.sequence[6],'');assert.throws(()=>buildGuidedProgram(program),/todas as semanas/);routine.sequence[6]=program.guided!.approaches[0].id;assert.equal(buildGuidedProgram(program).slots.length,7);assert.throws(()=>setGuideWeeks(program.guided!,0),/1 a 52/);
+});
+test('validação impede divergência entre montagem e sessões geradas e preserva instantâneos',()=>{
+ const {program}=fixture();const built=buildGuidedProgram(program),session=startStructured(built.slots[0].workout),before=JSON.stringify(session);built.guided!.routines[0].variants[0].workout.title='Alterado';assert.throws(()=>validateProgram(built),/não correspondem/);const rebuilt=buildGuidedProgram(built);validateProgram(rebuilt);assert.equal(JSON.stringify(session),before);parseTraining(session,'session');rebuilt.guided!.routines[0].sequence[0]='inexistente';assert.throws(()=>validateProgram(rebuilt),/abordagem/);
+});

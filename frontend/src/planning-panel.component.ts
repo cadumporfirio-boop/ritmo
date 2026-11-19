@@ -1,5 +1,7 @@
 import {Component,computed,inject,input,output,signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
+import {GuidedPlanning} from './guided-planning.component';
+import {newGuide} from './guided';
 import {PlanningStore} from './planning.store';
 import {TrainingStore} from './training.store';
 import {createStepForSport,createGroupForSport} from './sport-options';
@@ -9,10 +11,11 @@ import type {Program,PlannedSlot,ExerciseStrategy,Period} from './planning';
 import {uid,latestWorkouts,parseTraining,expand} from './training';
 import type {Workout,TrainingNode} from './training';
 import planningSchema from '../../contracts/planning.schema.json' with {type:'json'};
-@Component({selector:'app-planning-panel',standalone:true,imports:[FormsModule,TrainingNodeEditor],template:`
+@Component({selector:'app-planning-panel',standalone:true,imports:[FormsModule,TrainingNodeEditor,GuidedPlanning],template:`
  @if(store.error()){<p class="warning" role="alert">{{store.error()}} <button class="secondary" (click)="exportAll()">Exportar cópia</button></p>}
  @if(message()){<div class="training-message" role="status">{{message()}}<button aria-label="Fechar mensagem do planejamento" (click)="message.set('')">×</button></div>}
- @if(draft();as plan){
+ @if(draft()?.guided && !advancedView()){<guided-planning [program]="draft()!" [dirty]="dirty()" (changed)="changed()" (save)="saveGuided($event)" (back)="cancelProgram()" (advanced)="showAdvanced($event)" (start)="launchGuided($event)" />}@else if(draft();as plan){
+ @if(plan.guided){<div class="notice">Você está nas opções avançadas. Alterar sessões ou a duração transforma a montagem em um planejamento livre. <button class="text-button" (click)="advancedView.set(false)">Voltar à montagem simples</button></div>}
   @if(slotDraft();as slot){
    <section class="page-heading"><div><p class="eyebrow">SESSÃO PLANEJADA · DIA {{slot.day}}</p><h1>{{slot.label}}</h1><p>Alterações valem só para esta sessão do planejamento.</p></div><button class="secondary" (click)="slotDraft.set(null)">Cancelar sessão</button></section>
    <section class="panel builder-settings"><div class="builder-two"><label>Nome da sessão<input aria-label="Nome da sessão planejada" [(ngModel)]="slot.label" maxlength="150"></label><label>Dia do planejamento<input aria-label="Dia da sessão" type="number" min="1" [max]="plan.durationDays" [(ngModel)]="slot.day"></label><label>Horário<input type="time" [(ngModel)]="slot.time"></label><label>Estímulo / abordagem<input aria-label="Estímulo da sessão" list="planning-stimuli" [(ngModel)]="slot.stimulus" maxlength="150" placeholder="Livre: acúmulo, low volume, técnica…"></label></div><label>Observações<textarea rows="2" [(ngModel)]="slot.notes" maxlength="4000"></textarea></label></section>
@@ -37,7 +40,8 @@ import planningSchema from '../../contracts/planning.schema.json' with {type:'js
    <div class="builder-actions"><button class="secondary" (click)="exportDraft()">Exportar planejamento</button><button class="text-button" (click)="exportContract()">Exportar contrato para IA ↗</button></div><div class="finish-bar"><span>{{dirty()?'Há alterações por salvar.':'Planejamento salvo.'}}<small>A sessão iniciada conserva sua versão planejada.</small></span><button class="primary" (click)="saveProgram()">Salvar planejamento ✓</button></div>
   }
  }@else{
-  <section class="page-heading"><div><h1>Planejamento</h1><p>Semanas, ciclos e estratégias do seu jeito.</p></div><button class="primary" (click)="create()">Criar planejamento +</button></section>
+  <section class="page-heading"><div><h1>Planejamento</h1><p>Semanas, ciclos e estratégias do seu jeito.</p></div><button class="primary" (click)="createGuided()">Criar planejamento +</button></section>
+  <details class="guided-advanced-entry"><summary>Mais opções</summary><button class="text-button" (click)="create()">Criar planejamento avançado</button></details>
   <div class="workout-library">@for(plan of store.latest();track plan.id){<section class="panel workout-library-card"><p class="eyebrow">{{plan.model || 'Personalizado'}} · V{{plan.revision}}</p><h2>{{plan.title}}</h2><p>{{plan.durationDays}} dias · {{plan.slots.length}} sessões · {{plan.context.objective}}</p><button class="primary" (click)="open(plan)">Abrir planejamento →</button></section>}@empty{<section class="panel empty-state"><h2>Organize seu próximo ciclo.</h2><p>Você escolhe a duração, as sessões e as variáveis de cada treino.</p></section>}</div>
   @if(pendingArchive();as archive){<section class="panel"><p>{{archive.length}} versões válidas para importar. Versões existentes serão mantidas.</p><button class="primary" (click)="mergeArchive()">Adicionar versões da cópia</button><button class="secondary" (click)="pendingArchive.set(null)">Cancelar importação</button></section>}
   <details class="panel import-panel"><summary>Importar / exportar planejamentos</summary><label>Arquivo JSON<input type="file" accept=".json,application/json" (change)="readFile($event)"></label><label>Ou cole um planejamento<textarea aria-label="Importar planejamento JSON" rows="3" [(ngModel)]="importText"></textarea></label><div class="builder-actions"><button class="secondary" (click)="importProgram()">Revisar planejamento importado</button><button class="secondary" (click)="exportAll()">Exportar todas as versões</button></div></details><p class="footnote">Salvo neste navegador. Sem sincronização na nuvem ou geração automática por IA nesta versão.</p>
@@ -45,14 +49,18 @@ import planningSchema from '../../contracts/planning.schema.json' with {type:'js
  <datalist id="planning-models">@for(model of models;track model){<option [value]="model"></option>}</datalist><datalist id="planning-stimuli">@for(stimulus of stimuli;track stimulus){<option [value]="stimulus"></option>}</datalist><datalist id="planning-progressions">@for(method of methods;track method){<option [value]="method"></option>}</datalist>
 `})
 export class PlanningPanel {
- readonly store=inject(PlanningStore);readonly training=inject(TrainingStore);legacyBusy=input(false);started=output<void>();
+ readonly advancedView=signal(false);readonly store=inject(PlanningStore);readonly training=inject(TrainingStore);legacyBusy=input(false);started=output<void>();
  readonly draft=this.store.editorDraft;readonly slotDraft=this.store.editorSlot;readonly pendingArchive=signal<Program[]|null>(null);readonly dirty=this.store.editorDirty;readonly message=signal('');readonly windowStart=this.store.windowStart;readonly windowSize=this.store.windowSize;
  readonly workouts=computed(()=>latestWorkouts(this.training.data()));readonly contextFields=CONTEXT_FIELDS;readonly date=dateForDay;readonly newStep=createStepForSport;readonly newGroup=createGroupForSport;
  readonly models=['Linear','Ondulatório diário','Ondulatório semanal','Por blocos','Híbrido','Personalizado'];readonly stimuli=['Força','Hipertrofia','Volume','Acúmulo','Low volume','Deload','Resistência','Potência','Técnica','Recuperação'];readonly methods=['Carga','Repetições','Dupla progressão','RIR / RPE','Volume','Personalizada'];
  sourceId=this.workouts()[0]?.id??'';addDay=1;copyStart=1;copyLength=7;copyDestination=8;importText='';
+ createGuided(){this.open({...newProgram(),guided:newGuide()});this.dirty.set(true);}
+ saveGuided(program:Program){try{const saved=this.store.save(program);this.draft.set(structuredClone(saved));this.dirty.set(false);this.message.set('Planejamento salvo. Agora é só abrir a semana e preencher suas séries.');}catch(error){this.fail(error);}}
+ showAdvanced(program:Program){this.draft.set(structuredClone(program));this.advancedView.set(true);}
+ launchGuided(slot:PlannedSlot){if(this.dirty()){this.message.set('Salve o planejamento antes de abrir a sessão.');return;}const matches=(session:NonNullable<ReturnType<typeof this.training.data>['active']>)=>session.planning?.programId===this.draft()!.id&&session.planning.slotId===slot.id;const active=this.training.data().active;if(active&&matches(active)){this.training.screen.set('run');this.draft.set(null);this.started.emit();return;}const existing=[...this.training.data().sessions].filter(matches).sort((a,b)=>b.date.localeCompare(a.date))[0];if(existing){this.training.selected.set(existing);this.training.screen.set('detail');this.draft.set(null);this.started.emit();return;}this.launch(slot);}
  create(){this.open(newProgram());this.dirty.set(true);}
- open(plan:Program){this.draft.set(structuredClone(plan));this.slotDraft.set(null);this.windowStart.set(1);this.dirty.set(false);this.message.set('');this.sourceId=this.workouts()[0]?.id??'';}
- changed(){this.dirty.set(true);this.draft.update(plan=>plan?{...plan}:null);}
+ open(plan:Program){this.advancedView.set(false);this.draft.set(structuredClone(plan));this.slotDraft.set(null);this.windowStart.set(1);this.dirty.set(false);this.message.set('');this.sourceId=this.workouts()[0]?.id??'';}
+ changed(){if(this.advancedView()&&this.draft()?.guided&&this.draft()!.durationDays!==this.draft()!.guided!.weeks*7)delete this.draft()!.guided;this.dirty.set(true);this.draft.update(plan=>plan?{...plan}:null);}
  cancelProgram(){if(this.dirty()&&!confirm('Sair sem salvar as alterações do planejamento?'))return;this.draft.set(null);this.slotDraft.set(null);}
  saveProgram(){try{if(this.slotDraft())throw Error('Aplique ou cancele a sessão em edição antes de salvar.');const saved=this.store.save(this.draft()!);this.draft.set(structuredClone(saved));this.dirty.set(false);this.message.set('Planejamento salvo · versão '+saved.revision+'.');}catch(error){this.fail(error);}}
  periodName(kind:Period['kind']){return ({macro:'Macrociclo',meso:'Mesociclo',micro:'Microciclo',phase:'Fase',custom:'Agrupamento livre'})[kind];}
@@ -70,10 +78,10 @@ export class PlanningPanel {
  annotation(slot:PlannedSlot,id:string):ExerciseStrategy{return slot.exercises.find(item=>item.stepId===id)!;}
  splitList(text:string){return [...new Set(text.split(',').map(part=>part.trim()).filter(Boolean))];}
  slotChanged(){this.slotDraft.update(slot=>{if(!slot)return null;for(const step of steps(slot.workout.nodes))if(!slot.exercises.some(item=>item.stepId===step.id))slot.exercises.push({stepId:step.id,stimulus:'',primary:[],secondary:[],progressionIds:[],notes:''});const ids=new Set(steps(slot.workout.nodes).map(step=>step.id));return {...slot,workout:{...slot.workout,nodes:structuredClone(slot.workout.nodes)},exercises:slot.exercises.filter(item=>ids.has(item.stepId))};});}
- saveSlot(){try{const slot=this.slotDraft()!,plan=this.draft()!;if(!Number.isInteger(slot.day)||slot.day<1||slot.day>plan.durationDays||!slot.label.trim())throw Error('Informe nome e dia válidos para a sessão.');parseTraining(slot.workout,'workout');const existing=plan.slots.findIndex(item=>item.id===slot.id);if(existing<0)plan.slots.push(structuredClone(slot));else plan.slots[existing]=structuredClone(slot);this.slotDraft.set(null);this.changed();}catch(error){this.fail(error);}}
+ saveSlot(){try{const slot=this.slotDraft()!,plan=this.draft()!;if(!Number.isInteger(slot.day)||slot.day<1||slot.day>plan.durationDays||!slot.label.trim())throw Error('Informe nome e dia válidos para a sessão.');parseTraining(slot.workout,'workout');delete plan.guided;const existing=plan.slots.findIndex(item=>item.id===slot.id);if(existing<0)plan.slots.push(structuredClone(slot));else plan.slots[existing]=structuredClone(slot);this.slotDraft.set(null);this.changed();}catch(error){this.fail(error);}}
  cloneSlot(slot:PlannedSlot){if(this.draft()!.slots.length>=500){this.message.set('Limite de 500 sessões.');return;}const copy=copySlot(slot,Math.min(this.draft()!.durationDays,slot.day+this.windowSize()));this.editSlot(copy);}
- removeSlot(id:string){this.draft()!.slots=this.draft()!.slots.filter(slot=>slot.id!==id);this.changed();}
- copyRange(){try{this.draft.set(copyWindow(this.draft()!,this.copyStart,this.copyLength,this.copyDestination));this.changed();this.message.set('Intervalo copiado. As novas sessões são independentes.');}catch(error){this.fail(error);}}
+ removeSlot(id:string){delete this.draft()!.guided;this.draft()!.slots=this.draft()!.slots.filter(slot=>slot.id!==id);this.changed();}
+ copyRange(){try{const copied=copyWindow(this.draft()!,this.copyStart,this.copyLength,this.copyDestination);delete copied.guided;this.draft.set(copied);this.changed();this.message.set('Intervalo copiado. As novas sessões são independentes.');}catch(error){this.fail(error);}}
  addPeriod(){this.draft()!.periods.push({id:uid(),kind:'custom',name:'Novo agrupamento',startDay:this.windowStart(),durationDays:Math.max(1,this.windowEnd()-this.windowStart()+1),parentId:null,emphasis:''});this.changed();}
  removePeriod(id:string){const plan=this.draft()!;plan.periods=plan.periods.filter(period=>period.id!==id);for(const period of plan.periods)if(period.parentId===id)period.parentId=null;this.changed();}
  addProgression(){this.draft()!.progressions.push({id:uid(),name:'Nova estratégia',method:'Personalizada',condition:'',action:''});this.changed();}

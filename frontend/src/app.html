@@ -9,7 +9,7 @@
       <button [class.active]="tab()==='history'" (click)="navigate('history')"><span>↗</span> Histórico</button>
       <button [class.active]="tab()==='profile'" (click)="navigate('profile')"><span>⚙</span> Meu perfil</button>
     </nav>
-    <div class="sidebar-bottom"><div class="tiny-orbit">✳</div><h3>Menos planejamento.<br>Mais movimento.</h3><p>Um passo de cada vez, no seu ritmo.</p><span class="version">PLANEJAMENTO FLEXÍVEL · 0.4</span></div>
+    <div class="sidebar-bottom"><div class="tiny-orbit">✳</div><h3>Menos planejamento.<br>Mais movimento.</h3><p>Um passo de cada vez, no seu ritmo.</p><span class="version">MONTAGEM GUIADA · 0.4.1</span></div>
     <button class="user" (click)="navigate('profile')"><span class="avatar">{{state().profile.name.slice(0,1).toUpperCase() || 'V'}}</span><span>{{state().profile.name || 'Seu perfil'}}<small>Objetivo: reduzir gordura</small></span><span>⌄</span></button>
   </aside>
   <main>

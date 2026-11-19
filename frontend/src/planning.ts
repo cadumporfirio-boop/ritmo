@@ -1,3 +1,5 @@
+import {validateGuide,guideSlots} from './guided.ts';
+import type {GuidedPlan} from './guided.ts';
 import Ajv from 'ajv';
 import planningSchema from '../../contracts/planning.schema.json' with {type:'json'};
 import trainingSchema from '../../contracts/training.schema.json' with {type:'json'};
@@ -9,7 +11,7 @@ export interface Period {id:string;kind:'macro'|'meso'|'micro'|'phase'|'custom';
 export interface Progression {id:string;name:string;method:string;condition:string;action:string}
 export interface ExerciseStrategy {stepId:string;stimulus:string;primary:string[];secondary:string[];progressionIds:string[];notes:string}
 export interface PlannedSlot {id:string;day:number;time:string;label:string;stimulus:string;notes:string;source:{id:string;revision:number};workout:Workout;exercises:ExerciseStrategy[]}
-export interface Program {kind:'program';schemaVersion:1;id:string;revision:number;title:string;model:string;startDate:string;durationDays:number;context:Record<ContextField,string>;periods:Period[];slots:PlannedSlot[];progressions:Progression[]}
+export interface Program {kind:'program';schemaVersion:1;id:string;revision:number;title:string;model:string;startDate:string;durationDays:number;context:Record<ContextField,string>;periods:Period[];slots:PlannedSlot[];progressions:Progression[];guided?:GuidedPlan}
 export interface PlanningOrigin {programId:string;programRevision:number;slotId:string;day:number;programTitle:string;stimulus:string}
 export function newProgram():Program{return {kind:'program',schemaVersion:1,id:uid(),revision:1,title:'Meu planejamento',model:'Personalizado',startDate:'',durationDays:42,context:Object.fromEntries(CONTEXT_FIELDS.map(([key])=>[key,''])) as Record<ContextField,string>,periods:[],slots:[],progressions:[]};}
 export function steps(nodes:TrainingNode[]):Extract<TrainingNode,{kind:'step'}>[]{return nodes.flatMap(node=>node.kind==='group'?steps(node.children):[node]);}
@@ -30,5 +32,6 @@ export function validateProgram(raw:unknown):Program {
  const ids=new Set<string>();for(const item of [...plan.periods,...plan.progressions,...plan.slots]){if(ids.has(item.id))throw Error('Identificador repetido no planejamento.');ids.add(item.id);}
  for(const period of plan.periods){if(!period.name.trim()||period.startDay+period.durationDays-1>plan.durationDays)throw Error('Período fora da duração do planejamento.');const visited=new Set([period.id]);let current=period;while(current.parentId){const parent=plan.periods.find(item=>item.id===current.parentId);if(!parent||visited.has(parent.id))throw Error('Hierarquia de períodos inválida.');if(current.startDay<parent.startDay||current.startDay+current.durationDays>parent.startDay+parent.durationDays)throw Error('O período filho precisa caber no período pai.');visited.add(parent.id);current=parent;}}
  for(const slot of plan.slots){if(slot.day>plan.durationDays||!slot.label.trim())throw Error('Sessão fora da duração ou sem nome.');parseTraining(slot.workout,'workout');const stepIds=new Set(steps(slot.workout.nodes).map(step=>step.id)),annotated=new Set<string>();for(const item of slot.exercises){if(!stepIds.has(item.stepId)||annotated.has(item.stepId))throw Error('Estratégia vinculada a exercício inexistente ou repetido.');annotated.add(item.stepId);if(item.progressionIds.some(id=>!plan.progressions.some(rule=>rule.id===id)))throw Error('Estratégia de progressão não encontrada.');}}
+ if(plan.guided){validateGuide(plan.guided);if(plan.durationDays!==plan.guided.weeks*7)throw Error('A duração não corresponde às semanas da montagem guiada.');const expected=guideSlots(plan.guided,plan.startDate);const canonical=(value:unknown):string=>JSON.stringify(value,(_key,item)=>item&&typeof item==='object'&&!Array.isArray(item)?Object.fromEntries(Object.keys(item).sort().map(key=>[key,item[key]])):item);if(canonical(expected)!==canonical(plan.slots))throw Error('As sessões não correspondem à montagem guiada. Use o editor avançado para alterações independentes.');}
  return structuredClone(plan);
 }
