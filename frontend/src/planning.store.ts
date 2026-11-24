@@ -3,7 +3,7 @@ import {validateProgram} from './planning';
 import type {Program,PlannedSlot} from './planning';
 @Injectable({providedIn:'root'})
 export class PlanningStore {
- readonly aiOpen=signal(false);readonly editorDraft=signal<Program|null>(null);readonly editorSlot=signal<PlannedSlot|null>(null);readonly editorDirty=signal(false);readonly windowStart=signal(1);readonly windowSize=signal(7);
+ readonly cycleSetupOpen=signal(false);readonly aiOpen=signal(false);readonly editorDraft=signal<Program|null>(null);readonly editorSlot=signal<PlannedSlot|null>(null);readonly editorDirty=signal(false);readonly windowStart=signal(1);readonly windowSize=signal(7);
  readonly versions=signal<Program[]>([]);readonly error=signal('');private readonly key='ritmo.planning.v1';private raw:string|null=null;private blocked=false;
  constructor(){try{this.raw=localStorage.getItem(this.key);if(this.raw){const data:unknown=JSON.parse(this.raw);if(!Array.isArray(data)||data.length>100)throw Error();const plans=data.map(validateProgram);const ids=new Set<string>();for(const plan of plans){const key=plan.id+':'+plan.revision;if(ids.has(key))throw Error();ids.add(key);}this.versions.set(plans);}}catch{this.blocked=true;this.error.set('Não foi possível ler os planejamentos. O conteúdo original foi preservado; exporte uma cópia.');}}
  latest(){const result=new Map<string,Program>();for(const plan of this.versions())if(!result.has(plan.id)||result.get(plan.id)!.revision<plan.revision)result.set(plan.id,plan);return [...result.values()];}

@@ -1,10 +1,20 @@
-# Ritmo — versão 0.5.0
+# Ritmo — versão 0.6.0
 
-Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.5.0.
+Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.6.0.
 
 ![Interface do Ritmo](preview.png)
 
 O projeto demonstra planejamento semanal, registro por série e revisão de sessões. A integração real com IA ainda não está ativa.
+
+## Novidades da versão 0.6.0
+
+O botão **Ativar ciclo**, em Minha semana → Planejamento de ciclos, permite escolher um planejamento salvo e sua data inicial. Hoje e Minha semana passam a usar a cópia ativada, com sessões e metas correspondentes às datas. A semana civil pode ser consultada para trás e para a frente. Datas são calculadas como dias de calendário, sem somar horas locais sujeitas a horário de verão. A data é atualizada ao retornar à janela e periodicamente enquanto a página permanece aberta.
+
+A ativação fica em `ritmo.active-cycle.v1`, separada da rotina de referência e das bibliotecas. Ela conserva uma cópia do planejamento, seu identificador, versão e data. Ajustar a data salva uma nova versão do planejamento; fichas guiadas são rematerializadas para respeitar os dias da semana. Ativar outra data ou outro planejamento cria uma nova instância. Reaplicar a mesma data e planejamento conserva a instância e atualiza a versão escolhida.
+
+Sessões iniciadas pela ativação recebem `planning.activationId`. A associação impede que registros de outra execução do ciclo sejam contados como se pertencessem à atual. Sessões em andamento e concluídas preservam seus planos; o calendário não preenche registros, não conclui pendências nem repete automaticamente um ciclo encerrado. Alterações do planejamento só chegam à ativação após escolha explícita do usuário.
+
+A rotina de referência permanece acessível e inalterada. Atividades pessoais e outros esportes aparecem como referência nos dias do ciclo. Não há sincronização em nuvem; a ativação e seus registros continuam locais.
 
 ## Novidades da versão 0.5.0
 

@@ -11,7 +11,7 @@ export interface Group {kind:'group';id:string;name:string;repeat:number;childre
 export type TrainingNode=Step|Group;
 export interface Workout {kind:'workout';schemaVersion:2;id:string;revision:number;title:string;sport:string;notes:string;nodes:TrainingNode[]}
 export interface Entry {key:string;stepId:string;values:Partial<Record<Metric,number>>;done:boolean;skipped:boolean;note:string;extra?:{afterKey:string;role:string;goals:Goal[]}}
-export interface TrainingSession {kind:'session';schemaVersion:2;id:string;date:string;plan:Workout;entries:Entry[];completed:boolean;note:string;planning?:{programId:string;programRevision:number;slotId:string;day:number;programTitle:string;stimulus:string}}
+export interface TrainingSession {kind:'session';schemaVersion:2;id:string;date:string;plan:Workout;entries:Entry[];completed:boolean;note:string;planning?:{programId:string;programRevision:number;slotId:string;day:number;programTitle:string;stimulus:string;activationId?:string}}
 export interface TrainingLibrary {kind:'library';schemaVersion:2;workouts:Workout[];sessions:TrainingSession[];active:TrainingSession|null}
 export interface ExpandedStep {key:string;step:Step;trail:string;occurrence?:string}
 export const MAX_EXPANDED_STEPS=300;

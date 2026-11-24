@@ -12,7 +12,7 @@ export interface Progression {id:string;name:string;method:string;condition:stri
 export interface ExerciseStrategy {stepId:string;stimulus:string;primary:string[];secondary:string[];progressionIds:string[];notes:string}
 export interface PlannedSlot {id:string;day:number;time:string;label:string;stimulus:string;notes:string;source:{id:string;revision:number};workout:Workout;exercises:ExerciseStrategy[]}
 export interface Program {kind:'program';schemaVersion:1;id:string;revision:number;title:string;model:string;startDate:string;durationDays:number;context:Record<ContextField,string>;periods:Period[];slots:PlannedSlot[];progressions:Progression[];guided?:GuidedPlan}
-export interface PlanningOrigin {programId:string;programRevision:number;slotId:string;day:number;programTitle:string;stimulus:string}
+export interface PlanningOrigin {programId:string;programRevision:number;slotId:string;day:number;programTitle:string;stimulus:string;activationId?:string}
 export function newProgram():Program{return {kind:'program',schemaVersion:1,id:uid(),revision:1,title:'Meu planejamento',model:'Personalizado',startDate:'',durationDays:42,context:Object.fromEntries(CONTEXT_FIELDS.map(([key])=>[key,''])) as Record<ContextField,string>,periods:[],slots:[],progressions:[]};}
 export function steps(nodes:TrainingNode[]):Extract<TrainingNode,{kind:'step'}>[]{return nodes.flatMap(node=>node.kind==='group'?steps(node.children):[node]);}
 export function slotFromWorkout(workout:Workout,day:number):PlannedSlot {return {id:uid(),day,time:'',label:workout.title,stimulus:'',notes:'',source:{id:workout.id,revision:workout.revision},workout:{...structuredClone(workout),id:uid(),revision:1},exercises:[]};}

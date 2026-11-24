@@ -1,3 +1,8 @@
+import {ActiveCycleStore} from './active-cycle.store';
+import {ActiveCyclePanel} from './active-cycle-panel.component';
+import {cyclePosition,cycleSession} from './active-cycle';
+import {resolveSlot} from './planning';
+import type {PlannedSlot} from './planning';
 import {PlanningStore} from './planning.store';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { Component, signal, computed, effect, inject } from '@angular/core';
@@ -11,10 +16,13 @@ import {TrainingPanel} from './training-panel.component';
 import {TrainingStore} from './training.store';
 import type {Workout} from './training';
 
-@Component({selector:'app-root',standalone:true,imports:[FormsModule,AnalysisComponent,TrainingPanel,PlanningPanel],templateUrl:'./app.html'})
+@Component({selector:'app-root',standalone:true,imports:[FormsModule,AnalysisComponent,TrainingPanel,PlanningPanel,ActiveCyclePanel],templateUrl:'./app.html'})
 class App {
   readonly training=inject(TrainingStore);
   readonly planning=inject(PlanningStore);
+  readonly cycles=inject(ActiveCycleStore);
+  readonly routineOverride=signal(false);
+  readonly cycleVisible=computed(()=>!!this.cycles.active()&&!this.routineOverride());
   readonly state = signal<State>(initialState());
   readonly tab = signal('today');
   readonly planningView=signal(false);
@@ -29,7 +37,7 @@ class App {
   readonly selection = signal(Math.max(0,(new Date().getDay()+6)%7));
   readonly activity = computed(()=>this.state().week[this.selection()]);
   readonly summary = computed(()=>{this.dirty();return this.state().active?summarize(this.state().active!):{confirmed:0,total:0,volume:0,pending:0};});
-  readonly today = new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'numeric',month:'long'}).format(new Date());
+  readonly today = computed(()=>new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'numeric',month:'long'}).format(new Date(this.cycles.today()+'T12:00:00')));
   readonly weekCount = computed(()=>this.state().week.filter(a=>a.type!=='rest').length);
   minutes = 45;
   editing = false;
@@ -41,6 +49,11 @@ class App {
     try {this.originalStoredData=localStorage.getItem('ritmo.v1');this.state.set(restore(this.originalStoredData));} catch {this.corruptStorage.set(true);this.notify('Não foi possível ler os dados salvos. O conteúdo original foi preservado.');}
     effect(()=>{const state=this.state();this.dirty();if(!this.corruptStorage())try{localStorage.setItem('ritmo.v1',JSON.stringify(state));this.storageError.set(false);}catch{this.storageError.set(true);}});
   }
+  cycleLabel(){const cycle=this.cycles.active();if(!cycle)return '';const position=cyclePosition(cycle,this.cycles.today());return position.status==='upcoming'?'Ciclo agendado':position.status==='completed'?'Ciclo encerrado':'Semana '+position.week+' de '+position.totalWeeks;}
+  cycleActivated(){this.planning.cycleSetupOpen.set(false);this.routineOverride.set(false);this.planningView.set(false);this.navigate('today');this.notify(this.cycles.active()?'Ciclo ativado. O calendário segue a data de início.':'Ciclo desativado. Sua rotina foi preservada.');}
+  manageCycles(){if(this.planning.editorDirty()||this.planning.editorSlot()){this.notify('Salve ou cancele a edição antes de ativar um ciclo.');this.planningView.set(true);this.navigate('week');return;}this.planning.cycleSetupOpen.set(true);this.planning.aiOpen.set(false);this.planningView.set(true);this.navigate('week');}
+  resumeStructured(){if(this.training.data().active){this.training.screen.set('run');this.navigate('training');}}
+  openCycleSlot(slot:PlannedSlot){try{const cycle=this.cycles.active();if(!cycle)throw Error('Nenhum ciclo está ativo.');if(this.state().active)throw Error('Finalize a sessão de rotina em andamento antes de abrir outra.');const recorded=cycleSession(cycle,slot.id,this.training.data().sessions,this.training.data().active);if(recorded?.completed){this.training.selected.set(recorded);this.training.screen.set('detail');}else if(recorded){this.training.screen.set('run');}else{if(this.training.data().active)throw Error('Finalize a sessão em andamento antes de iniciar outra.');const resolved=resolveSlot(cycle.program,slot.id);resolved.workout.title=slot.label;resolved.origin.activationId=cycle.id;this.training.startPlanned(resolved.workout,resolved.origin);}this.navigate('training');}catch(error){this.notify(error instanceof Error?error.message:'Não foi possível abrir a sessão do ciclo.');}}
   openAi(){this.planning.aiOpen.set(true);this.planningView.set(true);this.navigate('week');}
   touch(){this.state.update(s=>({...s}));this.dirty.update(n=>n+1);}
   notify(message:string){this.toast.set(message);clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>this.toast.set(''),5500);}

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {JSDOM,VirtualConsole} from 'jsdom';
+import {newProgram,slotFromWorkout,steps} from '../src/planning.ts';
+import {preset} from '../src/training.ts';
 import aiFixture from './fixtures/ai-plan.json' with {type:'json'};
 import {initialState,createSession} from '../src/domain.ts';
 
@@ -14,9 +16,9 @@ const application=artifact?fs.readFileSync(artifact,'utf8').match(/<script type=
 const legacyKey=artifact?'ritmo.portfolio.beta.v2':'ritmo.v1';
 const delay=()=>new Promise(resolve=>setTimeout(resolve,25));
 async function waitFor(check){for(let i=0;i<120;i++){if(check())return;await delay();}throw Error('A interface não atingiu o estado esperado.');}
-async function open(seed={}){
+async function open(seed={},clock){
  const errors=[];const console=new VirtualConsole();console.on('jsdomError',error=>errors.push(String(error)));console.on('error',error=>errors.push(String(error)));
- const dom=new JSDOM('<!doctype html><html lang="pt-BR"><body><app-root></app-root></body></html>',{url:'https://ritmo-ui-test.invalid/',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:console,beforeParse(window){window.structuredClone=structuredClone;window.TextEncoder=TextEncoder;window.crypto.randomUUID=randomUUID;for(const [key,value] of Object.entries(seed))window.localStorage.setItem(key,value);}});
+ const dom=new JSDOM('<!doctype html><html lang="pt-BR"><body><app-root></app-root></body></html>',{url:'https://ritmo-ui-test.invalid/',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:console,beforeParse(window){if(clock){const NativeDate=window.Date;window.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[clock.now]));}static now(){return new NativeDate(clock.now).getTime();}};}window.structuredClone=structuredClone;window.TextEncoder=TextEncoder;window.crypto.randomUUID=randomUUID;for(const [key,value] of Object.entries(seed))window.localStorage.setItem(key,value);}});
  const script=dom.window.document.createElement('script');script.textContent=application;dom.window.document.body.append(script);
  await waitFor(()=>dom.window.document.querySelector('nav button'));
  return {dom,document:dom.window.document,errors};
@@ -255,5 +257,32 @@ test('troca manual com IA gera pedido, valida resposta e abre rascunho sem alter
 test('resposta avançada da IA abre o editor livre com nove dias e mantém importação sem salvar',async()=>{
  const fixture=(await import('./fixtures/ai-advanced-plan.json',{with:{type:'json'}})).default;const {dom,document,errors}=await open();try{
  const entry=[...document.querySelectorAll('button')].find(button=>button.textContent.includes('Montar meu planejamento com IA'));assert.ok(entry);entry.click();await delay();assert.ok(document.querySelector('ai-exchange-panel'));await fillPlanning(dom,document,'Resposta da IA',JSON.stringify(fixture));await click(document,'Validar e revisar resposta');assert.ok(document.querySelector('.ai-reply-preview').textContent.includes('9 dias'));assert.equal(dom.window.localStorage.getItem('ritmo.planning.v1'),null);await click(document,'Abrir planejamento para revisar →');assert.equal(document.querySelector('guided-planning'),null);assert.equal(document.querySelector('[aria-label="Duração em dias"]').value,'9');assert.equal(dom.window.localStorage.getItem('ritmo.planning.v1'),null);await click(document,'Salvar planejamento ✓');assert.equal(JSON.parse(dom.window.localStorage.getItem('ritmo.planning.v1'))[0].slots.length,2);assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});
+
+function calendarProgram(){const plan=newProgram();plan.title='Ciclo automático';plan.context.objective='Objetivo';plan.startDate='2026-11-23';plan.durationDays=14;plan.slots=[slotFromWorkout(preset('strength'),1),slotFromWorkout(preset('strength'),8)];for(const [index,slot] of plan.slots.entries()){slot.label='Treino semana '+(index+1);slot.stimulus=index?'Hipertrofia':'Força';for(const step of steps(slot.workout.nodes))for(const series of step.series??[]){const reps=series.goals.find(goal=>goal.metric==='reps');if(reps){reps.min=index?10:5;reps.max=index?12:8;}}}return plan;}
+test('ativação conecta Hoje e Minha semana, avança a semana e preserva registros e rotina',async()=>{
+ const plan=calendarProgram(),clock={now:'2026-11-23T12:00:00'};const {dom,document,errors}=await open({'ritmo.planning.v1':JSON.stringify([plan])},clock);try{
+ const originalWeek=JSON.stringify(JSON.parse(dom.window.localStorage.getItem(legacyKey)).week);await enterPlanning(document);await click(document,'Ativar ciclo ↗');await click(document,'Ativar ciclo ✓');assert.equal(document.querySelector('.cycle-position').textContent.trim(),'Semana 1 de 2 · dia 1 de 14');assert.equal(library(dom),null);
+ await click(document,'Abrir treino do ciclo →');assert.match(document.querySelector('.series-targets').textContent,/5–8 reps/);const cycleId=JSON.parse(dom.window.localStorage.getItem('ritmo.active-cycle.v1')).id;assert.equal(library(dom).active.planning.activationId,cycleId);
+ await fillPlanning(dom,document,'Etapa 1 Carga',20);await fillPlanning(dom,document,'Etapa 1 Repetições',6);document.querySelector('.series-check').click();await delay();await click(document,'Encerrar e salvar sessão ✓');const history=JSON.stringify(library(dom).sessions);
+ await click(document,'◉ Hoje ↗');assert.ok(document.querySelector('.cycle-slot').textContent.includes('Sessão registrada'));clock.now='2026-11-30T12:00:00';dom.window.dispatchEvent(new dom.window.Event('focus'));await delay();assert.match(document.querySelector('.cycle-position').textContent,/Semana 2 de 2/);assert.ok(document.querySelector('.cycle-slot').textContent.includes('Hipertrofia'));
+ await click(document,'▦ Minha semana');assert.equal(document.querySelectorAll('.cycle-days>.cycle-day').length,7);assert.ok(document.querySelector('.cycle-slot').textContent.includes('Treino semana 2'));await click(document,'Abrir treino do ciclo →');assert.match(document.querySelector('.series-targets').textContent,/10–12 reps/);assert.equal(JSON.stringify(library(dom).sessions),history);
+ await click(document,'◉ Hoje ↗');clock.now='2026-12-07T12:00:00';dom.window.dispatchEvent(new dom.window.Event('focus'));await delay();assert.match(document.querySelector('.cycle-position').textContent,/Ciclo encerrado/);assert.ok(button(document,'Continuar sessão em andamento →'));const active=JSON.stringify(library(dom).active);
+ await click(document,'Gerenciar ciclo');await click(document,'Desativar ciclo');assert.equal(dom.window.localStorage.getItem('ritmo.active-cycle.v1'),null);assert.equal(JSON.stringify(library(dom).active),active);assert.equal(JSON.stringify(library(dom).sessions),history);assert.equal(JSON.stringify(JSON.parse(dom.window.localStorage.getItem(legacyKey)).week),originalWeek);assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});
+test('alterar a data inicia outra ativação sem concluir sessões anteriores',async()=>{
+ const plan=calendarProgram(),clock={now:'2026-11-23T12:00:00'};const {dom,document,errors}=await open({'ritmo.planning.v1':JSON.stringify([plan])},clock);try{
+ await enterPlanning(document);await click(document,'Ativar ciclo ↗');await click(document,'Ativar ciclo ✓');const original=JSON.parse(dom.window.localStorage.getItem('ritmo.active-cycle.v1'));await click(document,'Abrir treino do ciclo →');const started=JSON.stringify(library(dom).active);
+ await click(document,'◉ Hoje ↗');await click(document,'Gerenciar ciclo');await fillPlanning(dom,document,'Início do ciclo ativo','2026-11-16');await click(document,'Ativar ciclo ✓');const changed=JSON.parse(dom.window.localStorage.getItem('ritmo.active-cycle.v1'));assert.notEqual(changed.id,original.id);assert.equal(changed.programRevision,2);assert.equal(JSON.stringify(library(dom).active),started);assert.equal(library(dom).sessions.length,0);assert.match(document.querySelector('.cycle-position').textContent,/Semana 2 de 2/);assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});
+
+test('nova versão só muda ciclo após reativação e conserva sessão já iniciada',async()=>{
+ const plan=calendarProgram(),clock={now:'2026-11-23T12:00:00'};const {dom,document,errors}=await open({'ritmo.planning.v1':JSON.stringify([plan])},clock);try{
+ await enterPlanning(document);await click(document,'Ativar ciclo ↗');await click(document,'Ativar ciclo ✓');const cycle=JSON.parse(dom.window.localStorage.getItem('ritmo.active-cycle.v1'));await click(document,'Abrir treino do ciclo →');const started=JSON.stringify(library(dom).active);
+ await enterPlanning(document);await click(document,'Abrir planejamento →');await fillPlanning(dom,document,'Nome do planejamento','Ciclo revisado');await click(document,'Salvar planejamento ✓');assert.equal(JSON.parse(dom.window.localStorage.getItem('ritmo.active-cycle.v1')).programRevision,1);await click(document,'◉ Hoje ↗');assert.ok(document.querySelector('.cycle-current').textContent.includes('Há uma nova versão salva'));
+ await click(document,'Gerenciar ciclo');await click(document,'Ativar ciclo ✓');const updated=JSON.parse(dom.window.localStorage.getItem('ritmo.active-cycle.v1'));assert.equal(updated.id,cycle.id);assert.equal(updated.programRevision,2);assert.equal(updated.program.title,'Ciclo revisado');assert.equal(JSON.stringify(library(dom).active),started);assert.ok(document.querySelector('.cycle-slot').textContent.includes('Em andamento'));assert.deepEqual(errors,[]);
  }finally{dom.window.close();}
 });

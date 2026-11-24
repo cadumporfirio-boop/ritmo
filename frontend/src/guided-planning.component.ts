@@ -1,3 +1,4 @@
+import {ActiveCycleStore} from './active-cycle.store';
 import {Component,input,output,signal,computed,inject} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {QuickExercise} from './quick-exercise.component';
@@ -35,7 +36,7 @@ import type {Workout,Step,TrainingSession,Entry,ExpandedStep} from './training';
  }
 `})
 export class GuidedPlanning {
- program=input.required<Program>();dirty=input(false);changed=output<void>();save=output<Program>();back=output<void>();advanced=output<Program>();start=output<PlannedSlot>();readonly training=inject(TrainingStore);readonly stage=signal(0);readonly error=signal('');readonly selectedRoutineId=signal('');readonly selectedApproachId=signal('');readonly workouts=computed(()=>latestWorkouts(this.training.data()));readonly weekdays=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];readonly colors=[{id:'green',label:'Verde'},{id:'amber',label:'Amarelo'},{id:'blue',label:'Azul'},{id:'purple',label:'Roxo'},{id:'slate',label:'Cinza'}];readonly exerciseSteps=(workout:Workout)=>steps(workout.nodes);readonly assessment=evaluateEntry;
+ program=input.required<Program>();dirty=input(false);changed=output<void>();save=output<Program>();back=output<void>();advanced=output<Program>();start=output<PlannedSlot>();readonly cycles=inject(ActiveCycleStore);readonly training=inject(TrainingStore);readonly stage=signal(0);readonly error=signal('');readonly selectedRoutineId=signal('');readonly selectedApproachId=signal('');readonly workouts=computed(()=>latestWorkouts(this.training.data()));readonly weekdays=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];readonly colors=[{id:'green',label:'Verde'},{id:'amber',label:'Amarelo'},{id:'blue',label:'Azul'},{id:'purple',label:'Roxo'},{id:'slate',label:'Cinza'}];readonly exerciseSteps=(workout:Workout)=>steps(workout.nodes);readonly assessment=evaluateEntry;
  readonly resolvedSlots=computed(()=>{try{return buildGuidedProgram(this.program()).slots;}catch{return [];}});
  sourceId='';weekday=0;
  guide(){return this.program().guided!;}
@@ -66,7 +67,7 @@ export class GuidedPlanning {
  weekDate(routine:GuidedRoutine,week:number){return dateForDay(this.program(),this.weekSlot(routine,week).day);}
  openWeek(routine:GuidedRoutine,week:number){if(this.dirty()){this.error.set('Salve o planejamento antes de abrir uma sessão.');return;}this.start.emit(this.weekSlot(routine,week));}
  expectedSeries(routine:GuidedRoutine,week:number,stepId:string){const workout=routine.variants.find(variant=>variant.approachId===routine.sequence[week-1])!.workout;return expand(workout).filter(row=>row.step.id===stepId).map(row=>row.step.role);}
- record(routine:GuidedRoutine,week:number):TrainingSession|undefined {const origin=(session:TrainingSession)=>session.planning?.programId===this.program().id&&session.planning.slotId===routine.id+'_w'+week;const active=this.training.data().active;if(active&&origin(active))return active;return [...this.training.data().sessions].filter(origin).sort((a,b)=>b.date.localeCompare(a.date))[0];}
+ record(routine:GuidedRoutine,week:number):TrainingSession|undefined {const cycle=this.cycles.active(),scope=cycle?.programId===this.program().id&&cycle.programRevision===this.program().revision?cycle:null;const origin=(session:TrainingSession)=>session.planning?.programId===this.program().id&&session.planning.slotId===routine.id+'_w'+week&&(!scope||session.planning.activationId===scope.id);const active=this.training.data().active;if(active&&origin(active))return active;return [...this.training.data().sessions].filter(origin).sort((a,b)=>b.date.localeCompare(a.date))[0];}
  exerciseEntries(session:TrainingSession,stepId:string){return sessionExpansion(session).flatMap((item,index)=>item.step.id===stepId?[{item,entry:session.entries[index]}]:[]);}
  entryText(entry:Entry){if(entry.skipped)return 'Não realizada';const values=entry.values;const result=values.reps!==undefined?(values.load!==undefined?values.load+'×':'')+values.reps:values.duration!==undefined?values.duration+' s':Object.values(values).filter(value=>value!==undefined).join(' · ');return result?(result+(entry.done?'':' · pendente')):'○';}
  showAdvanced(){try{this.advanced.emit(buildGuidedProgram(this.program()));}catch(error){this.fail(error);}}

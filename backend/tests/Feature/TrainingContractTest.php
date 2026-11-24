@@ -165,7 +165,7 @@ class TrainingContractTest extends TestCase
         $session = (object) ['kind' => 'session', 'schemaVersion' => 2, 'id' => 'planned-session', 'date' => '2026-11-18T10:00:00.000Z', 'plan' => $library->workouts[0], 'entries' => [
             (object) ['key' => '0r0/0', 'stepId' => 'step-a', 'values' => (object) [], 'done' => false, 'skipped' => false, 'note' => ''],
             (object) ['key' => '0r1/0', 'stepId' => 'step-a', 'values' => (object) [], 'done' => false, 'skipped' => false, 'note' => ''],
-        ], 'completed' => true, 'note' => '', 'planning' => (object) ['programId' => 'program-one', 'programRevision' => 1, 'slotId' => 'slot-one', 'day' => 9, 'programTitle' => 'Microciclo livre', 'stimulus' => 'Técnica']];
+        ], 'completed' => true, 'note' => '', 'planning' => (object) ['activationId' => 'activation-one', 'programId' => 'program-one', 'programRevision' => 1, 'slotId' => 'slot-one', 'day' => 9, 'programTitle' => 'Microciclo livre', 'stimulus' => 'Técnica']];
         $library->sessions = [$session];
         $this->withToken($this->token)->putJson('/api/training', ['revision' => 0, 'library' => $library])->assertOk();
         $session->planning->programRevision = 2;

@@ -996,6 +996,9 @@
             "stimulus": {
               "type": "string",
               "maxLength": 150
+            },
+            "activationId": {
+              "$ref": "#/definitions/id"
             }
           }
         }
