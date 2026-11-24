@@ -1,0 +1,440 @@
+{
+  "kind": "ritmo.ai.plan",
+  "schemaVersion": 1,
+  "requestId": "sample-request",
+  "plan": {
+    "title": "Ciclo completo de exemplo",
+    "objective": "Objetivo informado pelo usuário",
+    "startDate": "",
+    "weeks": 6,
+    "approaches": [
+      {
+        "key": "forca",
+        "name": "Força",
+        "color": "green"
+      },
+      {
+        "key": "hiper",
+        "name": "Hipertrofia",
+        "color": "amber"
+      },
+      {
+        "key": "volume",
+        "name": "Volume",
+        "color": "blue"
+      }
+    ],
+    "routines": [
+      {
+        "key": "lower",
+        "name": "LOWER — QUARTA",
+        "sport": "strength",
+        "weekday": 2,
+        "sequence": [
+          "forca",
+          "hiper",
+          "volume",
+          "forca",
+          "volume",
+          "hiper"
+        ],
+        "exercises": [
+          {
+            "key": "leg_press",
+            "name": "Leg Press 45°",
+            "notes": "Principal exercício",
+            "variants": [
+              {
+                "approachKey": "forca",
+                "series": [
+                  {
+                    "role": "top",
+                    "goals": [
+                      {
+                        "metric": "load",
+                        "mode": "record",
+                        "required": true
+                      },
+                      {
+                        "metric": "reps",
+                        "mode": "range",
+                        "required": true,
+                        "min": 5,
+                        "max": 8
+                      },
+                      {
+                        "metric": "rir",
+                        "mode": "range",
+                        "required": false,
+                        "min": 0,
+                        "max": 1
+                      },
+                      {
+                        "metric": "rest",
+                        "mode": "range",
+                        "required": false,
+                        "min": 120,
+                        "max": 180
+                      }
+                    ]
+                  },
+                  {
+                    "role": "backoff",
+                    "goals": [
+                      {
+                        "metric": "load",
+                        "mode": "record",
+                        "required": true
+                      },
+                      {
+                        "metric": "reps",
+                        "mode": "range",
+                        "required": true,
+                        "min": 5,
+                        "max": 8
+                      },
+                      {
+                        "metric": "rir",
+                        "mode": "range",
+                        "required": false,
+                        "min": 0,
+                        "max": 1
+                      },
+                      {
+                        "metric": "rest",
+                        "mode": "range",
+                        "required": false,
+                        "min": 120,
+                        "max": 180
+                      }
+                    ]
+                  },
+                  {
+                    "role": "backoff",
+                    "goals": [
+                      {
+                        "metric": "load",
+                        "mode": "record",
+                        "required": true
+                      },
+                      {
+                        "metric": "reps",
+                        "mode": "range",
+                        "required": true,
+                        "min": 5,
+                        "max": 8
+                      },
+                      {
+                        "metric": "rir",
+                        "mode": "range",
+                        "required": false,
+                        "min": 0,
+                        "max": 1
+                      },
+                      {
+                        "metric": "rest",
+                        "mode": "range",
+                        "required": false,
+                        "min": 120,
+                        "max": 180
+                      }
+                    ]
+                  },
+                  {
+                    "role": "backoff",
+                    "goals": [
+                      {
+                        "metric": "load",
+                        "mode": "record",
+                        "required": true
+                      },
+                      {
+                        "metric": "reps",
+                        "mode": "range",
+                        "required": true,
+                        "min": 5,
+                        "max": 8
+                      },
+                      {
+                        "metric": "rir",
+                        "mode": "range",
+                        "required": false,
+                        "min": 0,
+                        "max": 1
+                      },
+                      {
+                        "metric": "rest",
+                        "mode": "range",
+                        "required": false,
+                        "min": 120,
+                        "max": 180
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "approachKey": "hiper",
+                "series": [
+                  {
+                    "role": "top",
+                    "goals": [
+                      {
+                        "metric": "load",
+                        "mode": "record",
+                        "required": true
+                      },
+                      {
+                        "metric": "reps",
+                        "mode": "range",
+                        "required": true,
+                        "min": 8,
+                        "max": 12
+                      },
+                      {
+                        "metric": "rir",
+                        "mode": "range",
+                        "required": false,
+                        "min": 0,
+                        "max": 1
+                      },
+                      {
+                        "metric": "rest",
+                        "mode": "range",
+                        "required": false,
+                        "min": 120,
+                        "max": 180
+                      }
+                    ]
+                  },
+                  {
+                    "role": "backoff",
+                    "goals": [
+                      {
+                        "metric": "load",
+                        "mode": "record",
+                        "required": true
+                      },
+                      {
+                        "metric": "reps",
+                        "mode": "range",
+                        "required": true,
+                        "min": 8,
+                        "max": 12
+                      },
+                      {
+                        "metric": "rir",
+                        "mode": "range",
+                        "required": false,
+                        "min": 0,
+                        "max": 1
+                      },
+                      {
+                        "metric": "rest",
+                        "mode": "range",
+                        "required": false,
+                        "min": 120,
+                        "max": 180
+                      }
+                    ]
+                  },
+                  {
+                    "role": "backoff",
+                    "goals": [
+                      {
+                        "metric": "load",
+                        "mode": "record",
+                        "required": true
+                      },
+                      {
+                        "metric": "reps",
+                        "mode": "range",
+                        "required": true,
+                        "min": 8,
+                        "max": 12
+                      },
+                      {
+                        "metric": "rir",
+                        "mode": "range",
+                        "required": false,
+                        "min": 0,
+                        "max": 1
+                      },
+                      {
+                        "metric": "rest",
+                        "mode": "range",
+                        "required": false,
+                        "min": 120,
+                        "max": 180
+                      }
+                    ]
+                  },
+                  {
+                    "role": "backoff",
+                    "goals": [
+                      {
+                        "metric": "load",
+                        "mode": "record",
+                        "required": true
+                      },
+                      {
+                        "metric": "reps",
+                        "mode": "range",
+                        "required": true,
+                        "min": 8,
+                        "max": 12
+                      },
+                      {
+                        "metric": "rir",
+                        "mode": "range",
+                        "required": false,
+                        "min": 0,
+                        "max": 1
+                      },
+                      {
+                        "metric": "rest",
+                        "mode": "range",
+                        "required": false,
+                        "min": 120,
+                        "max": 180
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "approachKey": "volume",
+                "series": [
+                  {
+                    "role": "top",
+                    "goals": [
+                      {
+                        "metric": "load",
+                        "mode": "record",
+                        "required": true
+                      },
+                      {
+                        "metric": "reps",
+                        "mode": "range",
+                        "required": true,
+                        "min": 12,
+                        "max": 15
+                      },
+                      {
+                        "metric": "rir",
+                        "mode": "range",
+                        "required": false,
+                        "min": 2,
+                        "max": 2
+                      },
+                      {
+                        "metric": "rest",
+                        "mode": "range",
+                        "required": false,
+                        "min": 120,
+                        "max": 180
+                      }
+                    ]
+                  },
+                  {
+                    "role": "backoff",
+                    "goals": [
+                      {
+                        "metric": "load",
+                        "mode": "record",
+                        "required": true
+                      },
+                      {
+                        "metric": "reps",
+                        "mode": "range",
+                        "required": true,
+                        "min": 12,
+                        "max": 15
+                      },
+                      {
+                        "metric": "rir",
+                        "mode": "range",
+                        "required": false,
+                        "min": 2,
+                        "max": 2
+                      },
+                      {
+                        "metric": "rest",
+                        "mode": "range",
+                        "required": false,
+                        "min": 120,
+                        "max": 180
+                      }
+                    ]
+                  },
+                  {
+                    "role": "backoff",
+                    "goals": [
+                      {
+                        "metric": "load",
+                        "mode": "record",
+                        "required": true
+                      },
+                      {
+                        "metric": "reps",
+                        "mode": "range",
+                        "required": true,
+                        "min": 12,
+                        "max": 15
+                      },
+                      {
+                        "metric": "rir",
+                        "mode": "range",
+                        "required": false,
+                        "min": 2,
+                        "max": 2
+                      },
+                      {
+                        "metric": "rest",
+                        "mode": "range",
+                        "required": false,
+                        "min": 120,
+                        "max": 180
+                      }
+                    ]
+                  },
+                  {
+                    "role": "backoff",
+                    "goals": [
+                      {
+                        "metric": "load",
+                        "mode": "record",
+                        "required": true
+                      },
+                      {
+                        "metric": "reps",
+                        "mode": "range",
+                        "required": true,
+                        "min": 12,
+                        "max": 15
+                      },
+                      {
+                        "metric": "rir",
+                        "mode": "range",
+                        "required": false,
+                        "min": 2,
+                        "max": 2
+                      },
+                      {
+                        "metric": "rest",
+                        "mode": "range",
+                        "required": false,
+                        "min": 120,
+                        "max": 180
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

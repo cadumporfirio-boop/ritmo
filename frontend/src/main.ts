@@ -1,3 +1,4 @@
+import {PlanningStore} from './planning.store';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { Component, signal, computed, effect, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +14,7 @@ import type {Workout} from './training';
 @Component({selector:'app-root',standalone:true,imports:[FormsModule,AnalysisComponent,TrainingPanel,PlanningPanel],templateUrl:'./app.html'})
 class App {
   readonly training=inject(TrainingStore);
+  readonly planning=inject(PlanningStore);
   readonly state = signal<State>(initialState());
   readonly tab = signal('today');
   readonly planningView=signal(false);
@@ -39,6 +41,7 @@ class App {
     try {this.originalStoredData=localStorage.getItem('ritmo.v1');this.state.set(restore(this.originalStoredData));} catch {this.corruptStorage.set(true);this.notify('Não foi possível ler os dados salvos. O conteúdo original foi preservado.');}
     effect(()=>{const state=this.state();this.dirty();if(!this.corruptStorage())try{localStorage.setItem('ritmo.v1',JSON.stringify(state));this.storageError.set(false);}catch{this.storageError.set(true);}});
   }
+  openAi(){this.planning.aiOpen.set(true);this.planningView.set(true);this.navigate('week');}
   touch(){this.state.update(s=>({...s}));this.dirty.update(n=>n+1);}
   notify(message:string){this.toast.set(message);clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>this.toast.set(''),5500);}
   navigate(tab:string){if(tab==='history')this.training.screen.set('library');this.openAnalysis.set(null);this.tab.set(tab);this.view.set('home');}

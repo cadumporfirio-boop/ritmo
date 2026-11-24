@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {JSDOM,VirtualConsole} from 'jsdom';
+import aiFixture from './fixtures/ai-plan.json' with {type:'json'};
 import {initialState,createSession} from '../src/domain.ts';
 
 const directory=new URL('../dist/treino-flow/browser/',import.meta.url);
@@ -237,5 +238,22 @@ test('montagem guiada começa sem ficha, compartilha nome e observações e reto
  const {dom,document,errors}=await open();try{
  await enterPlanning(document);await click(document,'Criar planejamento +');await fillPlanning(dom,document,'Nome do planejamento guiado','Plano do zero');await fillPlanning(dom,document,'Objetivo guiado','Meu objetivo');await fillPlanning(dom,document,'Quantidade de semanas',1);await click(document,'Adicionar treino à semana +');await fillPlanning(dom,document,'Nome do treino semanal','Treino A');await click(document,'Continuar para metas →');await fillPlanning(dom,document,'Nome do exercício guiado','Cadeira flexora');await fillPlanning(dom,document,'Observações do exercício guiado','Aquecimento de joelho e posterior');await fillPlanning(dom,document,'work reps mínimo',6);await fillPlanning(dom,document,'work reps máximo',10);await click(document,'Hipertrofia');assert.equal(document.querySelector('[aria-label="Nome do exercício guiado"]').value,'Cadeira flexora');assert.equal(document.querySelector('[aria-label="Observações do exercício guiado"]').value,'Aquecimento de joelho e posterior');assert.equal(document.querySelector('[aria-label="work reps mínimo"]').value,'');
  await click(document,'Continuar para semanas →');const choose=document.querySelector('[aria-label="Treino A semana 1"]');choose.value=choose.options[1].value;choose.dispatchEvent(new dom.window.Event('change',{bubbles:true}));await delay();await click(document,'Ver meu planejamento →');await click(document,'Salvar planejamento guiado ✓');await click(document,'Editar montagem');await fillPlanning(dom,document,'Quantidade de semanas',2);await click(document,'⚙ Meu perfil');await enterPlanning(document);assert.ok(document.querySelector('[aria-label="Quantidade de semanas"]'));assert.equal(document.querySelector('[aria-label="Quantidade de semanas"]').value,'2');assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});
+
+test('troca manual com IA gera pedido, valida resposta e abre rascunho sem alterar dados até salvar',async()=>{
+ const {dom,document,errors}=await open();try{
+ await click(document,'▤ Treinos');await click(document,'Criar treino +');await click(document,'Séries tradicionais ↗');await click(document,'Salvar treino ✓');const original=dom.window.localStorage.getItem('ritmo.training.v2');
+ await enterPlanning(document);await click(document,'Montar com IA ↗');await fillPlanning(dom,document,'Pedido para IA','Quero meu planejamento completo de seis semanas.');await click(document,'Gerar pedido para copiar');const prompt=document.querySelector('[aria-label="Comunicação para copiar"]').value;assert.ok(prompt.includes('CONTRATO JSON SCHEMA'));assert.ok(!prompt.includes('Observação privada'));const requestId=prompt.match(/"requestId":"([^"]+)"/)[1];
+ let copied='';Object.defineProperty(dom.window.navigator,'clipboard',{value:{writeText:async text=>{copied=text;}}});await click(document,'Copiar pedido completo');assert.equal(copied,prompt);
+ await fillPlanning(dom,document,'Resposta da IA','{invalid');await click(document,'Validar e revisar resposta');assert.equal(document.querySelector('.ai-reply-preview'),null);assert.equal(dom.window.localStorage.getItem('ritmo.planning.v1'),null);
+ const response=structuredClone(aiFixture);response.requestId=requestId;await fillPlanning(dom,document,'Resposta da IA',JSON.stringify(response));await click(document,'Validar e revisar resposta');assert.ok(document.querySelector('.ai-reply-preview').textContent.includes('6 semanas'));assert.equal(dom.window.localStorage.getItem('ritmo.planning.v1'),null);await click(document,'Abrir planejamento para revisar →');assert.ok(document.querySelector('guided-planning'));assert.equal(dom.window.localStorage.getItem('ritmo.planning.v1'),null);assert.equal(dom.window.localStorage.getItem('ritmo.training.v2'),original);
+ await click(document,'Salvar planejamento guiado ✓');const saved=JSON.parse(dom.window.localStorage.getItem('ritmo.planning.v1'));assert.equal(saved.length,1);assert.equal(saved[0].slots.length,6);assert.equal(saved[0].slots[0].workout.nodes[0].series.length,4);assert.equal(dom.window.localStorage.getItem('ritmo.training.v2'),original);assert.deepEqual(errors,[]);
+ }finally{dom.window.close();}
+});
+
+test('resposta avançada da IA abre o editor livre com nove dias e mantém importação sem salvar',async()=>{
+ const fixture=(await import('./fixtures/ai-advanced-plan.json',{with:{type:'json'}})).default;const {dom,document,errors}=await open();try{
+ const entry=[...document.querySelectorAll('button')].find(button=>button.textContent.includes('Montar meu planejamento com IA'));assert.ok(entry);entry.click();await delay();assert.ok(document.querySelector('ai-exchange-panel'));await fillPlanning(dom,document,'Resposta da IA',JSON.stringify(fixture));await click(document,'Validar e revisar resposta');assert.ok(document.querySelector('.ai-reply-preview').textContent.includes('9 dias'));assert.equal(dom.window.localStorage.getItem('ritmo.planning.v1'),null);await click(document,'Abrir planejamento para revisar →');assert.equal(document.querySelector('guided-planning'),null);assert.equal(document.querySelector('[aria-label="Duração em dias"]').value,'9');assert.equal(dom.window.localStorage.getItem('ritmo.planning.v1'),null);await click(document,'Salvar planejamento ✓');assert.equal(JSON.parse(dom.window.localStorage.getItem('ritmo.planning.v1'))[0].slots.length,2);assert.deepEqual(errors,[]);
  }finally{dom.window.close();}
 });

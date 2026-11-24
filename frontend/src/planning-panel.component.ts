@@ -1,3 +1,5 @@
+import {AiExchangePanel} from './ai-exchange-panel.component';
+import type {Profile,Activity} from './domain';
 import {Component,computed,inject,input,output,signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {GuidedPlanning} from './guided-planning.component';
@@ -11,10 +13,11 @@ import type {Program,PlannedSlot,ExerciseStrategy,Period} from './planning';
 import {uid,latestWorkouts,parseTraining,expand} from './training';
 import type {Workout,TrainingNode} from './training';
 import planningSchema from '../../contracts/planning.schema.json' with {type:'json'};
-@Component({selector:'app-planning-panel',standalone:true,imports:[FormsModule,TrainingNodeEditor,GuidedPlanning],template:`
+@Component({selector:'app-planning-panel',standalone:true,imports:[FormsModule,TrainingNodeEditor,GuidedPlanning,AiExchangePanel],template:`
  @if(store.error()){<p class="warning" role="alert">{{store.error()}} <button class="secondary" (click)="exportAll()">Exportar cópia</button></p>}
  @if(message()){<div class="training-message" role="status">{{message()}}<button aria-label="Fechar mensagem do planejamento" (click)="message.set('')">×</button></div>}
- @if(draft()?.guided && !advancedView()){<guided-planning [program]="draft()!" [dirty]="dirty()" (changed)="changed()" (save)="saveGuided($event)" (back)="cancelProgram()" (advanced)="showAdvanced($event)" (start)="launchGuided($event)" />}@else if(draft();as plan){
+ @if(!showAi()){<div class="ai-entry"><button class="secondary" (click)="enterAi()">Montar com IA ↗</button></div>}
+ @if(showAi()){<ai-exchange-panel [program]="draft()" [profile]="profile()" [week]="week()" (back)="showAi.set(false)" (open)="openAiProgram($event)" />}@else if(draft()?.guided && !advancedView()){<guided-planning [program]="draft()!" [dirty]="dirty()" (changed)="changed()" (save)="saveGuided($event)" (back)="cancelProgram()" (advanced)="showAdvanced($event)" (start)="launchGuided($event)" />}@else if(draft();as plan){
  @if(plan.guided){<div class="notice">Você está nas opções avançadas. Alterar sessões ou a duração transforma a montagem em um planejamento livre. <button class="text-button" (click)="advancedView.set(false)">Voltar à montagem simples</button></div>}
   @if(slotDraft();as slot){
    <section class="page-heading"><div><p class="eyebrow">SESSÃO PLANEJADA · DIA {{slot.day}}</p><h1>{{slot.label}}</h1><p>Alterações valem só para esta sessão do planejamento.</p></div><button class="secondary" (click)="slotDraft.set(null)">Cancelar sessão</button></section>
@@ -49,11 +52,13 @@ import planningSchema from '../../contracts/planning.schema.json' with {type:'js
  <datalist id="planning-models">@for(model of models;track model){<option [value]="model"></option>}</datalist><datalist id="planning-stimuli">@for(stimulus of stimuli;track stimulus){<option [value]="stimulus"></option>}</datalist><datalist id="planning-progressions">@for(method of methods;track method){<option [value]="method"></option>}</datalist>
 `})
 export class PlanningPanel {
- readonly advancedView=signal(false);readonly store=inject(PlanningStore);readonly training=inject(TrainingStore);legacyBusy=input(false);started=output<void>();
+ readonly showAi=inject(PlanningStore).aiOpen;profile=input<Partial<Profile>>({});week=input<Activity[]>([]);readonly advancedView=signal(false);readonly store=inject(PlanningStore);readonly training=inject(TrainingStore);legacyBusy=input(false);started=output<void>();
  readonly draft=this.store.editorDraft;readonly slotDraft=this.store.editorSlot;readonly pendingArchive=signal<Program[]|null>(null);readonly dirty=this.store.editorDirty;readonly message=signal('');readonly windowStart=this.store.windowStart;readonly windowSize=this.store.windowSize;
  readonly workouts=computed(()=>latestWorkouts(this.training.data()));readonly contextFields=CONTEXT_FIELDS;readonly date=dateForDay;readonly newStep=createStepForSport;readonly newGroup=createGroupForSport;
  readonly models=['Linear','Ondulatório diário','Ondulatório semanal','Por blocos','Híbrido','Personalizado'];readonly stimuli=['Força','Hipertrofia','Volume','Acúmulo','Low volume','Deload','Resistência','Potência','Técnica','Recuperação'];readonly methods=['Carga','Repetições','Dupla progressão','RIR / RPE','Volume','Personalizada'];
  sourceId=this.workouts()[0]?.id??'';addDay=1;copyStart=1;copyLength=7;copyDestination=8;importText='';
+ enterAi(){if(this.slotDraft()){this.message.set('Aplique ou cancele a sessão em edição antes de montar com IA.');return;}this.showAi.set(true);}
+ openAiProgram(program:Program){this.open(structuredClone(program));this.dirty.set(true);this.showAi.set(false);this.message.set('Planejamento da IA aberto para revisão. Salve apenas depois de conferir as metas.');}
  createGuided(){this.open({...newProgram(),guided:newGuide()});this.dirty.set(true);}
  saveGuided(program:Program){try{const saved=this.store.save(program);this.draft.set(structuredClone(saved));this.dirty.set(false);this.message.set('Planejamento salvo. Agora é só abrir a semana e preencher suas séries.');}catch(error){this.fail(error);}}
  showAdvanced(program:Program){this.draft.set(structuredClone(program));this.advancedView.set(true);}

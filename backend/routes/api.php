@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiPlanningController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Middleware\OwnerToken;
@@ -11,6 +12,9 @@ Route::post('/planning', fn () => response()->json([
     'message' => 'A API PHP está conectada. O provedor de IA ainda não foi configurado; nenhum plano personalizado foi gerado.',
 ], 503));
 Route::middleware(OwnerToken::class)->group(function () {
+    Route::get('/ai/capabilities', [AiPlanningController::class, 'capabilities']);
+    Route::post('/ai/validate-response', [AiPlanningController::class, 'validateResponse']);
+    Route::post('/ai/planning', [AiPlanningController::class, 'generate'])->middleware('throttle:6,1');
     Route::get('/state', [StateController::class, 'show']);
     Route::put('/state', [StateController::class, 'update']);
     Route::get('/training', [TrainingController::class, 'show']);

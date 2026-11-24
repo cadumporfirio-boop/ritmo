@@ -1,0 +1,1539 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ritmo.local/contracts/ai-exchange-v1",
+  "title": "Ritmo — comunicação portável com IA",
+  "oneOf": [
+    {
+      "$ref": "#/definitions/request"
+    },
+    {
+      "$ref": "#/definitions/response"
+    }
+  ],
+  "definitions": {
+    "goal": {
+      "description": "Limites e resultados usam unidades canônicas por métrica: reps=contagem; load=kg; rir=contagem 0 a 10; rpe=escala 0 a 10; duration=segundos; distance=metros; heartRate=bpm; power=W; cadence=rpm; pace=segundos por km. Em record não há limites; range/exact usam min e max; min e max usam o limite correspondente. Não converter unidades implicitamente.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric",
+        "mode",
+        "required"
+      ],
+      "properties": {
+        "metric": {
+          "enum": [
+            "reps",
+            "load",
+            "rir",
+            "rpe",
+            "duration",
+            "distance",
+            "heartRate",
+            "power",
+            "cadence",
+            "pace",
+            "rest",
+            "percent1rm"
+          ]
+        },
+        "mode": {
+          "enum": [
+            "record",
+            "range",
+            "min",
+            "max",
+            "exact"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "min": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "max": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "range",
+                  "exact"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "min",
+              "max"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "min"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "min"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "max"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "max"
+            ]
+          }
+        }
+      ]
+    },
+    "series": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "goals"
+      ],
+      "properties": {
+        "role": {
+          "enum": [
+            "warmup",
+            "work",
+            "top",
+            "backoff",
+            "drop",
+            "recovery",
+            "technique",
+            "cooldown",
+            "custom"
+          ]
+        },
+        "goals": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/definitions/goal"
+          }
+        }
+      }
+    },
+    "compact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "objective",
+        "startDate",
+        "weeks",
+        "approaches",
+        "routines"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "startDate": {
+          "type": "string",
+          "pattern": "^$|^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "weeks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 52
+        },
+        "approaches": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "name",
+              "color"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 150
+              },
+              "color": {
+                "enum": [
+                  "green",
+                  "amber",
+                  "blue",
+                  "purple",
+                  "slate"
+                ]
+              }
+            }
+          }
+        },
+        "routines": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "name",
+              "weekday",
+              "sequence",
+              "exercises",
+              "sport"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 150
+              },
+              "weekday": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 6
+              },
+              "sequence": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 52,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80,
+                  "pattern": "^[a-zA-Z0-9_-]+$"
+                }
+              },
+              "exercises": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 50,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "name",
+                    "notes",
+                    "variants"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80,
+                      "pattern": "^[a-zA-Z0-9_-]+$"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 150
+                    },
+                    "notes": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "variants": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 12,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "approachKey",
+                          "series"
+                        ],
+                        "properties": {
+                          "approachKey": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80,
+                            "pattern": "^[a-zA-Z0-9_-]+$"
+                          },
+                          "series": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 30,
+                            "items": {
+                              "$ref": "#/definitions/series"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "sport": {
+                "enum": [
+                  "strength",
+                  "running",
+                  "cycling",
+                  "swimming",
+                  "martial",
+                  "mixed",
+                  "other"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "schemaVersion",
+        "requestId",
+        "plan"
+      ],
+      "properties": {
+        "kind": {
+          "const": "ritmo.ai.plan"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "plan": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/compact"
+            },
+            {
+              "$ref": "#/definitions/advanced"
+            }
+          ]
+        }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "schemaVersion",
+        "requestId",
+        "createdAt",
+        "instructions",
+        "context",
+        "workouts",
+        "currentProgram",
+        "history",
+        "scope",
+        "responseFormat"
+      ],
+      "properties": {
+        "kind": {
+          "const": "ritmo.ai.request"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 40
+        },
+        "instructions": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "maxProperties": 30
+        },
+        "workouts": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 30,
+          "items": {
+            "type": "object"
+          }
+        },
+        "currentProgram": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "history": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "workout",
+              "records"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              "workout": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 150
+              },
+              "records": {
+                "type": "array",
+                "minItems": 0,
+                "maxItems": 300,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "exercise",
+                    "role",
+                    "equipment",
+                    "values"
+                  ],
+                  "properties": {
+                    "exercise": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 150
+                    },
+                    "role": {
+                      "enum": [
+                        "warmup",
+                        "work",
+                        "top",
+                        "backoff",
+                        "drop",
+                        "recovery",
+                        "technique",
+                        "cooldown",
+                        "custom"
+                      ]
+                    },
+                    "equipment": {
+                      "type": "string",
+                      "maxLength": 150
+                    },
+                    "values": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "reps": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000
+                        },
+                        "load": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 2000
+                        },
+                        "rir": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10
+                        },
+                        "rpe": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 10
+                        },
+                        "duration": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 86400
+                        },
+                        "distance": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 1000000
+                        },
+                        "heartRate": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 300
+                        },
+                        "power": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "cadence": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 500
+                        },
+                        "pace": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 36000
+                        },
+                        "rest": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 86400
+                        },
+                        "percent1rm": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 150
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "historyIncluded",
+            "historyMaxSessions",
+            "historyOnlyConfirmed"
+          ],
+          "properties": {
+            "historyIncluded": {
+              "type": "boolean"
+            },
+            "historyMaxSessions": {
+              "const": 5
+            },
+            "historyOnlyConfirmed": {
+              "const": true
+            }
+          }
+        },
+        "responseFormat": {
+          "enum": [
+            "guided",
+            "advanced"
+          ]
+        }
+      }
+    },
+    "advanced": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$id": "https://ritmo.local/contracts/ai-advanced-plan-v1",
+      "title": "Planejamento temporal flexível do Ritmo",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "schemaVersion",
+        "id",
+        "revision",
+        "title",
+        "model",
+        "startDate",
+        "durationDays",
+        "context",
+        "periods",
+        "progressions",
+        "slots"
+      ],
+      "properties": {
+        "kind": {
+          "const": "program"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "startDate": {
+          "type": "string",
+          "pattern": "^$|^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "durationDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 730
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "objective",
+            "experience",
+            "frequency",
+            "split",
+            "availableExercises",
+            "primaryMuscles",
+            "secondaryMuscles",
+            "history",
+            "performance",
+            "recovery",
+            "limitations",
+            "preferences",
+            "tolerableVolume",
+            "availability",
+            "progressionStrategy"
+          ],
+          "properties": {
+            "objective": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "experience": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "frequency": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "split": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "availableExercises": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "primaryMuscles": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "secondaryMuscles": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "history": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "performance": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "recovery": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "limitations": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "preferences": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "tolerableVolume": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "availability": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "progressionStrategy": {
+              "type": "string",
+              "maxLength": 4000
+            }
+          }
+        },
+        "periods": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "name",
+              "startDay",
+              "durationDays",
+              "parentId",
+              "emphasis"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
+              "kind": {
+                "enum": [
+                  "macro",
+                  "meso",
+                  "micro",
+                  "phase",
+                  "custom"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 150
+              },
+              "startDay": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 730
+              },
+              "durationDays": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 730
+              },
+              "parentId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "pattern": "^[a-zA-Z0-9_-]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "emphasis": {
+                "type": "string",
+                "maxLength": 4000
+              }
+            }
+          }
+        },
+        "progressions": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "method",
+              "condition",
+              "action"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 150
+              },
+              "method": {
+                "type": "string",
+                "maxLength": 150
+              },
+              "condition": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "action": {
+                "type": "string",
+                "maxLength": 4000
+              }
+            }
+          }
+        },
+        "slots": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "day",
+              "time",
+              "label",
+              "stimulus",
+              "notes",
+              "source",
+              "workout",
+              "exercises"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
+              "day": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 730
+              },
+              "time": {
+                "type": "string",
+                "pattern": "^$|^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 150
+              },
+              "stimulus": {
+                "type": "string",
+                "maxLength": 150
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "revision"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "pattern": "^[a-zA-Z0-9_-]+$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                }
+              },
+              "workout": {
+                "$ref": "#/definitions/workout"
+              },
+              "exercises": {
+                "type": "array",
+                "maxItems": 300,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "stepId",
+                    "stimulus",
+                    "primary",
+                    "secondary",
+                    "progressionIds",
+                    "notes"
+                  ],
+                  "properties": {
+                    "stepId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100,
+                      "pattern": "^[a-zA-Z0-9_-]+$"
+                    },
+                    "stimulus": {
+                      "type": "string",
+                      "maxLength": 150
+                    },
+                    "primary": {
+                      "type": "array",
+                      "maxItems": 30,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      }
+                    },
+                    "secondary": {
+                      "type": "array",
+                      "maxItems": 30,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      }
+                    },
+                    "progressionIds": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100,
+                        "pattern": "^[a-zA-Z0-9_-]+$"
+                      }
+                    },
+                    "notes": {
+                      "type": "string",
+                      "maxLength": 4000
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "definitions": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "goal": {
+          "description": "Limites e resultados usam unidades canônicas por métrica: reps=contagem; load=kg; rir=contagem 0 a 10; rpe=escala 0 a 10; duration=segundos; distance=metros; heartRate=bpm; power=W; cadence=rpm; pace=segundos por km. Em record não há limites; range/exact usam min e max; min e max usam o limite correspondente. Não converter unidades implicitamente.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "metric",
+            "mode",
+            "required"
+          ],
+          "properties": {
+            "metric": {
+              "enum": [
+                "reps",
+                "load",
+                "rir",
+                "rpe",
+                "duration",
+                "distance",
+                "heartRate",
+                "power",
+                "cadence",
+                "pace",
+                "rest",
+                "percent1rm"
+              ]
+            },
+            "mode": {
+              "enum": [
+                "record",
+                "range",
+                "min",
+                "max",
+                "exact"
+              ]
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "min": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "max": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000000
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "range",
+                      "exact"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "min",
+                  "max"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "mode": {
+                    "const": "min"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "min"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "mode": {
+                    "const": "max"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "max"
+                ]
+              }
+            }
+          ]
+        },
+        "step": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "name",
+            "role",
+            "equipment",
+            "notes",
+            "goals"
+          ],
+          "properties": {
+            "kind": {
+              "const": "step"
+            },
+            "id": {
+              "$ref": "#/definitions/id"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 150
+            },
+            "role": {
+              "enum": [
+                "warmup",
+                "work",
+                "top",
+                "backoff",
+                "drop",
+                "recovery",
+                "technique",
+                "cooldown",
+                "custom"
+              ]
+            },
+            "equipment": {
+              "type": "string",
+              "maxLength": 150
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "goals": {
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "$ref": "#/definitions/goal"
+              }
+            },
+            "series": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 30,
+              "items": {
+                "$ref": "#/definitions/series"
+              }
+            }
+          }
+        },
+        "group": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "name",
+            "repeat",
+            "children"
+          ],
+          "properties": {
+            "kind": {
+              "const": "group"
+            },
+            "id": {
+              "$ref": "#/definitions/id"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 150
+            },
+            "repeat": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 30
+            },
+            "children": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 50,
+              "items": {
+                "$ref": "#/definitions/node"
+              }
+            }
+          }
+        },
+        "node": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/step"
+            },
+            {
+              "$ref": "#/definitions/group"
+            }
+          ]
+        },
+        "workout": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "schemaVersion",
+            "id",
+            "revision",
+            "title",
+            "sport",
+            "notes",
+            "nodes"
+          ],
+          "properties": {
+            "kind": {
+              "const": "workout"
+            },
+            "schemaVersion": {
+              "const": 2
+            },
+            "id": {
+              "$ref": "#/definitions/id"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 150
+            },
+            "sport": {
+              "enum": [
+                "strength",
+                "running",
+                "cycling",
+                "swimming",
+                "martial",
+                "mixed",
+                "other"
+              ]
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "nodes": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 50,
+              "items": {
+                "$ref": "#/definitions/node"
+              }
+            }
+          }
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "reps": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "load": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2000
+            },
+            "rir": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "rpe": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "duration": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 86400
+            },
+            "distance": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1000000
+            },
+            "heartRate": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 300
+            },
+            "power": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "cadence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 500
+            },
+            "pace": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 36000
+            },
+            "rest": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 86400
+            },
+            "percent1rm": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 150
+            }
+          }
+        },
+        "entry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "key",
+            "stepId",
+            "values",
+            "done",
+            "skipped",
+            "note"
+          ],
+          "properties": {
+            "key": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            },
+            "stepId": {
+              "$ref": "#/definitions/id"
+            },
+            "values": {
+              "$ref": "#/definitions/values"
+            },
+            "done": {
+              "type": "boolean"
+            },
+            "skipped": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "extra": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "afterKey",
+                "role",
+                "goals"
+              ],
+              "properties": {
+                "afterKey": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                },
+                "role": {
+                  "enum": [
+                    "warmup",
+                    "work",
+                    "top",
+                    "backoff",
+                    "drop",
+                    "recovery",
+                    "technique",
+                    "cooldown",
+                    "custom"
+                  ]
+                },
+                "goals": {
+                  "type": "array",
+                  "maxItems": 12,
+                  "items": {
+                    "$ref": "#/definitions/goal"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "session": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "schemaVersion",
+            "id",
+            "date",
+            "plan",
+            "entries",
+            "completed",
+            "note"
+          ],
+          "properties": {
+            "kind": {
+              "const": "session"
+            },
+            "schemaVersion": {
+              "const": 2
+            },
+            "id": {
+              "$ref": "#/definitions/id"
+            },
+            "date": {
+              "type": "string",
+              "minLength": 20,
+              "maxLength": 40
+            },
+            "plan": {
+              "$ref": "#/definitions/workout"
+            },
+            "entries": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 300,
+              "items": {
+                "$ref": "#/definitions/entry"
+              }
+            },
+            "completed": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "planning": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "programId",
+                "programRevision",
+                "slotId",
+                "day",
+                "programTitle",
+                "stimulus"
+              ],
+              "properties": {
+                "programId": {
+                  "$ref": "#/definitions/id"
+                },
+                "programRevision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                "slotId": {
+                  "$ref": "#/definitions/id"
+                },
+                "day": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 730
+                },
+                "programTitle": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 150
+                },
+                "stimulus": {
+                  "type": "string",
+                  "maxLength": 150
+                }
+              }
+            }
+          }
+        },
+        "library": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "schemaVersion",
+            "workouts",
+            "sessions",
+            "active"
+          ],
+          "properties": {
+            "kind": {
+              "const": "library"
+            },
+            "schemaVersion": {
+              "const": 2
+            },
+            "workouts": {
+              "type": "array",
+              "maxItems": 500,
+              "items": {
+                "$ref": "#/definitions/workout"
+              }
+            },
+            "sessions": {
+              "type": "array",
+              "maxItems": 500,
+              "items": {
+                "$ref": "#/definitions/session"
+              }
+            },
+            "active": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/definitions/session"
+                }
+              ]
+            }
+          }
+        },
+        "series": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "role",
+            "goals"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/id"
+            },
+            "role": {
+              "enum": [
+                "warmup",
+                "work",
+                "top",
+                "backoff",
+                "drop",
+                "recovery",
+                "technique",
+                "cooldown",
+                "custom"
+              ]
+            },
+            "goals": {
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "$ref": "#/definitions/goal"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

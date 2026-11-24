@@ -1,10 +1,20 @@
-# Ritmo — versão 0.4.1
+# Ritmo — versão 0.5.0
 
-Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.4.1.
+Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.5.0.
 
 ![Interface do Ritmo](preview.png)
 
 O projeto demonstra planejamento semanal, registro por série e revisão de sessões. A integração real com IA ainda não está ativa.
+
+## Novidades da versão 0.5.0
+
+**Montar com IA** gera um pedido portável para copiar ou baixar e levar a um chat externo. O pedido inclui as instruções, um contrato de resposta e os dados escolhidos pelo usuário. Fichas, planejamento de referência e histórico confirmado são opcionais. O histórico exportado se limita às cinco sessões estruturadas concluídas mais recentes e não inclui observações pessoais. Nenhum dado é enviado automaticamente para outro serviço.
+
+A resposta pode ser colada como JSON, inclusive em bloco de código, ou importada de arquivo. O formato compacto materializa todas as semanas no planejador guiado; o formato avançado preserva ciclos livres, blocos e exercícios independentes por sessão. A importação exige validação estrutural e semântica, confere o identificador do pedido quando disponível e abre uma cópia para revisão. Salvar continua sendo uma ação explícita; o histórico não é importado nem substituído.
+
+O contrato compartilhado está em `contracts/ai-exchange.schema.json`. A interface PHP `PlanningProvider` define a porta futura de geração. O adaptador padrão é `UnconfiguredPlanningProvider` e `RITMO_AI_ENABLED=false`. Os endpoints privados são `GET /api/ai/capabilities`, `POST /api/ai/validate-response` e `POST /api/ai/planning`; a geração também tem limite de requisições. Mesmo ativando a opção, não há geração sem implementar e vincular um provedor no servidor. A resposta da API é validada e não é gravada automaticamente. Chaves de provedor devem permanecer somente no servidor.
+
+A demonstração pública do GitHub Pages continua estática e usa a troca manual. A API PHP preparada no projeto não é hospedada pelo GitHub Pages. Os custos e limites do chat externo dependem do serviço escolhido; não há chamada de API paga no fluxo manual.
 
 ## Novidades da versão 0.4.1
 
