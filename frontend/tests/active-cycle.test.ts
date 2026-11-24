@@ -17,3 +17,5 @@ test('registros de outra ativação não são contados e sessão em andamento te
 test('ativação exige cópia consistente da data e versão do planejamento',()=>{
  const cycle=fixture();validateActiveCycle(cycle);assert.throws(()=>validateActiveCycle({...cycle,programRevision:2}),/versão/);assert.throws(()=>validateActiveCycle({...cycle,startDate:'2026-11-24'}),/versão/);assert.throws(()=>validateActiveCycle({...cycle,extra:true}),/inválido/);
 });
+
+test('reagendamento move só a ocorrência e valida datas sem alterar metas',()=>{const cycle=fixture(),slot=cycle.program.slots[0],original=JSON.stringify(cycle.program);cycle.rescheduled={[slot.id]:'2026-11-25'};validateActiveCycle(cycle);assert.equal(slotsOnDate(cycle,'2026-11-23').length,0);assert.equal(slotsOnDate(cycle,'2026-11-25')[0].id,slot.id);assert.equal(slotsOnDate(cycle,'2026-11-30').length,1);assert.equal(JSON.stringify(cycle.program),original);assert.throws(()=>validateActiveCycle({...cycle,rescheduled:{[slot.id]:'2026-12-07'}}),/dentro do ciclo/);assert.throws(()=>validateActiveCycle({...cycle,rescheduled:{unknown:'2026-11-25'}}),/inválido/);});
