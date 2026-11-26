@@ -1,3 +1,4 @@
+import {appStorage} from './app-storage';
 import {Injectable,signal} from '@angular/core';
 import {blankLibrary,parseTraining,saveRevision,startStructured,latestWorkouts} from './training';
 import type {TrainingLibrary,Workout,TrainingSession} from './training';
@@ -13,7 +14,7 @@ export class TrainingStore {
  private blocked=false;
  private unreadable=false;
  constructor(){
-  try{this.raw=localStorage.getItem(this.key);if(this.raw)this.data.set(parseTraining<TrainingLibrary>(JSON.parse(this.raw),'library'));}
+  try{this.raw=appStorage.getItem(this.key);if(this.raw)this.data.set(parseTraining<TrainingLibrary>(JSON.parse(this.raw),'library'));}
   catch{this.blocked=true;this.unreadable=true;this.error.set('Não foi possível ler a biblioteca. O conteúdo original foi preservado. Exporte uma cópia antes de restaurar.');}
  }
  touch():void {
@@ -21,10 +22,10 @@ export class TrainingStore {
   if(this.blocked)return;
   try{
    const checked=parseTraining<TrainingLibrary>(this.data(),'library');
-   if(localStorage.getItem(this.key)!==this.raw){this.blocked=true;throw Error('Outra aba alterou a biblioteca. Exporte esta sessão e recarregue antes de continuar.');}
+   if(appStorage.getItem(this.key)!==this.raw){this.blocked=true;throw Error('Outra aba alterou a biblioteca. Exporte esta sessão e recarregue antes de continuar.');}
    const serialized=JSON.stringify(checked);
-   if(this.raw)localStorage.setItem(this.key+'.previous',this.raw);
-   localStorage.setItem(this.key,serialized);this.raw=serialized;this.error.set('');
+   if(this.raw)appStorage.setItem(this.key+'.previous',this.raw);
+   appStorage.setItem(this.key,serialized);this.raw=serialized;this.error.set('');
   }catch(error){this.error.set(error instanceof Error?error.message:'Não foi possível salvar. Exporte uma cópia.');}
  }
  save(plan:Workout):Workout {if(this.blocked)throw Error(this.error()||'Restaure uma cópia válida antes de salvar.');const saved=saveRevision(this.data(),plan);this.touch();if(this.error())throw Error(this.error());return saved;}
@@ -43,10 +44,10 @@ export class TrainingStore {
  }
  restore(raw:unknown):void {
   const checked=parseTraining<TrainingLibrary>(raw,'library');
-  const previous=localStorage.getItem(this.key);
+  const previous=appStorage.getItem(this.key);
   const serialized=JSON.stringify(checked);
-  if(previous)localStorage.setItem(this.key+'.previous',previous);
-  localStorage.setItem(this.key,serialized);this.raw=serialized;this.blocked=false;this.unreadable=false;this.error.set('');this.data.set(checked);this.screen.set('library');
+  if(previous)appStorage.setItem(this.key+'.previous',previous);
+  appStorage.setItem(this.key,serialized);this.raw=serialized;this.blocked=false;this.unreadable=false;this.error.set('');this.data.set(checked);this.screen.set('library');
  }
  exportRaw():string{return this.unreadable&&this.raw?this.raw:JSON.stringify(this.data(),null,2);}
 }

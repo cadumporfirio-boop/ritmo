@@ -1,10 +1,22 @@
-# Ritmo — versão 0.6.0
+# Ritmo — versão 0.7.0
 
-Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.6.0.
+Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.7.0.
 
 ![Interface do Ritmo](preview.png)
 
 O projeto demonstra planejamento semanal, registro por série e revisão de sessões. A integração real com IA ainda não está ativa.
+
+## Novidades da versão 0.7.0
+
+Conta por e-mail/senha usando Supabase Auth, cópia por usuário no Postgres e sincronização com comparação de versões. O modo sem conta continua local. Consulte [a configuração do Supabase](supabase/README.md).
+
+O primeiro login exige escolher entre enviar os dados deste aparelho para uma conta vazia e abrir a cópia da conta. O login nunca envia automaticamente a biblioteca sem conta. A conta usa um espaço separado no navegador; sair retorna aos dados sem login. Senhas e chaves administrativas não fazem parte do backup.
+
+Alterações salvas localmente são enviadas após uma pausa de 1,8 s; também há nova tentativa ao voltar à janela, reconectar e a cada minuto. A API só grava quando a revisão esperada ainda é a atual. Alterações simultâneas são sinalizadas, sem sobrescrita automática. Atualizações remotas são aplicadas por escolha explícita, com cópia local anterior. Aplicá-las exige finalizar a sessão ativa e salvar as edições.
+
+O registro sem conexão funciona enquanto a página está aberta; esta versão ainda não tem service worker para abrir o site do zero sem internet. O backup completo pode ser baixado em Minha conta. O projeto Free pode pausar por inatividade e não inclui garantia de disponibilidade nem restauração automática de backups do provedor.
+
+A configuração pública contém somente URL e chave publishable. Nunca coloque senha do banco, chave secreta ou service_role nela. O beta incorporado ao portfólio continua sem login; a conta é usada no endereço próprio do Ritmo.
 
 ## Novidades da versão 0.6.0
 
@@ -14,7 +26,7 @@ A ativação fica em `ritmo.active-cycle.v1`, separada da rotina de referência 
 
 Sessões iniciadas pela ativação recebem `planning.activationId`. A associação impede que registros de outra execução do ciclo sejam contados como se pertencessem à atual. Sessões em andamento e concluídas preservam seus planos; o calendário não preenche registros, não conclui pendências nem repete automaticamente um ciclo encerrado. Alterações do planejamento só chegam à ativação após escolha explícita do usuário.
 
-A rotina de referência permanece acessível e inalterada. Atividades pessoais e outros esportes aparecem como referência nos dias do ciclo. Não há sincronização em nuvem; a ativação e seus registros continuam locais.
+A rotina de referência permanece acessível e inalterada. Atividades pessoais e outros esportes aparecem como referência nos dias do ciclo. A ativação e seus registros são guardados localmente e, a partir da versão 0.7, podem ser sincronizados com uma conta.
 
 ## Novidades da versão 0.5.0
 

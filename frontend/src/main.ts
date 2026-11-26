@@ -1,3 +1,6 @@
+import {CloudStore} from './cloud.store';
+import {CloudAccount} from './cloud-account.component';
+import {appStorage} from './app-storage';
 import {ActiveCycleStore} from './active-cycle.store';
 import {ActiveCyclePanel} from './active-cycle-panel.component';
 import {cyclePosition,cycleSession} from './active-cycle';
@@ -16,8 +19,9 @@ import {TrainingPanel} from './training-panel.component';
 import {TrainingStore} from './training.store';
 import type {Workout} from './training';
 
-@Component({selector:'app-root',standalone:true,imports:[FormsModule,AnalysisComponent,TrainingPanel,PlanningPanel,ActiveCyclePanel],templateUrl:'./app.html'})
+@Component({selector:'app-root',standalone:true,imports:[FormsModule,AnalysisComponent,TrainingPanel,PlanningPanel,ActiveCyclePanel,CloudAccount],templateUrl:'./app.html'})
 class App {
+  readonly cloud=inject(CloudStore);
   readonly training=inject(TrainingStore);
   readonly planning=inject(PlanningStore);
   readonly cycles=inject(ActiveCycleStore);
@@ -46,8 +50,8 @@ class App {
   private toastTimer?: ReturnType<typeof setTimeout>;
   private originalStoredData: string | null = null;
   constructor(){
-    try {this.originalStoredData=localStorage.getItem('ritmo.v1');this.state.set(restore(this.originalStoredData));} catch {this.corruptStorage.set(true);this.notify('Não foi possível ler os dados salvos. O conteúdo original foi preservado.');}
-    effect(()=>{const state=this.state();this.dirty();if(!this.corruptStorage())try{localStorage.setItem('ritmo.v1',JSON.stringify(state));this.storageError.set(false);}catch{this.storageError.set(true);}});
+    try {this.originalStoredData=appStorage.getItem('ritmo.v1');this.state.set(restore(this.originalStoredData));} catch {this.corruptStorage.set(true);this.notify('Não foi possível ler os dados salvos. O conteúdo original foi preservado.');}
+    effect(()=>{const state=this.state();this.dirty();if(!this.corruptStorage())try{if(appStorage.getItem('ritmo.v1')!==this.originalStoredData)throw Error('Outra aba alterou seus dados.');const serialized=JSON.stringify(state);appStorage.setItem('ritmo.v1',serialized);this.originalStoredData=serialized;this.storageError.set(false);}catch{this.storageError.set(true);}});
   }
   cycleLabel(){const cycle=this.cycles.active();if(!cycle)return '';const position=cyclePosition(cycle,this.cycles.today());return position.status==='upcoming'?'Ciclo agendado':position.status==='completed'?'Ciclo encerrado':'Semana '+position.week+' de '+position.totalWeeks;}
   cycleActivated(){this.planning.cycleSetupOpen.set(false);this.routineOverride.set(false);this.planningView.set(false);this.navigate('today');this.notify(this.cycles.active()?'Ciclo ativado. O calendário segue a data de início.':'Ciclo desativado. Sua rotina foi preservada.');}
