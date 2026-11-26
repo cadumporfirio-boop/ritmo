@@ -1,10 +1,16 @@
-# Ritmo — versão 0.7.0
+# Ritmo — versão 0.7.1
 
-Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.7.0.
+Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.7.1.
 
 ![Interface do Ritmo](preview.png)
 
 O projeto demonstra planejamento semanal, registro por série e revisão de sessões. A integração real com IA ainda não está ativa.
+
+## Novidades da versão 0.7.1
+
+Hoje tem boas-vindas com botão de fechar, mantidas ocultas durante a navegação e reapresentadas ao recarregar/reabrir ou autenticar uma conta. O aviso é transitório e não entra no backup. A navegação fica fixa embaixo em telas até 800 px, com espaço para a área segura do iPhone e para ações fixas durante o treino. Em telas maiores, a navegação lateral permanece.
+
+Conta e sincronização ficam no último card de Meu perfil. Textos repetidos de Hoje foram reduzidos; avisos de falha de armazenamento e conflitos continuam visíveis. A frase do assistente usa espaços explícitos, sem uma quebra de linha que una palavras no celular. O banner externo do beta foi substituído pelo aviso dispensável do app.
 
 ## Novidades da versão 0.7.0
 

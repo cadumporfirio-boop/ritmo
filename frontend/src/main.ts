@@ -29,6 +29,8 @@ class App {
   readonly cycleVisible=computed(()=>!!this.cycles.active()&&!this.routineOverride());
   readonly state = signal<State>(initialState());
   readonly tab = signal('today');
+  readonly welcomeVisible=signal(true);
+  private welcomeUserId:string|null=null;
   readonly planningView=signal(false);
   readonly openAnalysis=signal<string|null>(null);
   readonly view = signal<'home'|'workout'|'review'>('home');
@@ -50,6 +52,7 @@ class App {
   private toastTimer?: ReturnType<typeof setTimeout>;
   private originalStoredData: string | null = null;
   constructor(){
+    effect(()=>{const id=this.cloud.user()?.id??null;if(id&&id!==this.welcomeUserId)this.welcomeVisible.set(true);this.welcomeUserId=id;});
     try {this.originalStoredData=appStorage.getItem('ritmo.v1');this.state.set(restore(this.originalStoredData));} catch {this.corruptStorage.set(true);this.notify('Não foi possível ler os dados salvos. O conteúdo original foi preservado.');}
     effect(()=>{const state=this.state();this.dirty();if(!this.corruptStorage())try{if(appStorage.getItem('ritmo.v1')!==this.originalStoredData)throw Error('Outra aba alterou seus dados.');const serialized=JSON.stringify(state);appStorage.setItem('ritmo.v1',serialized);this.originalStoredData=serialized;this.storageError.set(false);}catch{this.storageError.set(true);}});
   }
