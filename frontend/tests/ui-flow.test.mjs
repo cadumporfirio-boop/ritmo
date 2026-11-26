@@ -116,9 +116,9 @@ test('Treinos fica limpa, séries são agrupadas e o editor pode separá-las',as
  await click(document,'▤ Treinos');assert.equal(document.querySelector('h1').textContent,'Treinos');assert.ok(!document.querySelector('app-root').textContent.includes('Escolha uma estrutura'));assert.ok(!document.querySelector('app-root').textContent.includes('Aproveitar uma ficha antiga'));
  await click(document,'Criar treino +');await click(document,'Séries tradicionais ↗');await click(document,'Salvar treino ✓');await click(document,'Iniciar treino →');
  assert.equal(document.querySelectorAll('.execution-block').length,1);assert.equal(document.querySelectorAll('.series-entry').length,3);
- await click(document,'Encerrar e salvar sessão ✓');assert.ok(!document.querySelector('app-root').textContent.includes('Seu histórico nesta biblioteca'));
+ await click(document,'Encerrar e salvar sessão ✓');assert.ok(!document.querySelector('app-root').textContent.includes('Treinos registrados'));
  await click(document,'Editar');await click(document,'Separar séries em etapas');await click(document,'Salvar treino ✓');await click(document,'Iniciar treino →');assert.equal(document.querySelectorAll('.execution-block').length,3);
- await click(document,'Encerrar e salvar sessão ✓');await click(document,'↗ Histórico');assert.ok(document.querySelector('app-root').textContent.includes('Seu histórico nesta biblioteca'));await click(document,'Consultar');assert.ok(document.querySelector('training-runner'));assert.deepEqual(errors,[]);
+ await click(document,'Encerrar e salvar sessão ✓');await click(document,'↗ Histórico');assert.ok(document.querySelector('app-root').textContent.includes('Treinos registrados'));await click(document,'Consultar');assert.ok(document.querySelector('training-runner'));assert.deepEqual(errors,[]);
  }finally{dom.window.close();}
 });
 test('análise antiga só é criada quando solicitada e fichas antigas ficam no Histórico',async()=>{
@@ -282,7 +282,7 @@ test('alterar a data inicia outra ativação sem concluir sessões anteriores',a
 test('nova versão só muda ciclo após reativação e conserva sessão já iniciada',async()=>{
  const plan=calendarProgram(),clock={now:'2026-11-23T12:00:00'};const {dom,document,errors}=await open({'ritmo.planning.v1':JSON.stringify([plan])},clock);try{
  await enterPlanning(document);await click(document,'Ativar ciclo ↗');await click(document,'Ativar ciclo ✓');const cycle=JSON.parse(dom.window.localStorage.getItem('ritmo.active-cycle.v1'));await click(document,'Abrir treino do ciclo →');const started=JSON.stringify(library(dom).active);
- await enterPlanning(document);await click(document,'Abrir planejamento →');await fillPlanning(dom,document,'Nome do planejamento','Ciclo revisado');await click(document,'Salvar planejamento ✓');assert.equal(JSON.parse(dom.window.localStorage.getItem('ritmo.active-cycle.v1')).programRevision,1);await click(document,'◉ Hoje ↗');assert.ok(document.querySelector('.cycle-current').textContent.includes('Há uma nova versão salva'));
+ await enterPlanning(document);await click(document,'Abrir planejamento →');await fillPlanning(dom,document,'Nome do planejamento','Ciclo revisado');await click(document,'Salvar planejamento ✓');assert.equal(JSON.parse(dom.window.localStorage.getItem('ritmo.active-cycle.v1')).programRevision,1);await click(document,'◉ Hoje ↗');assert.ok(document.querySelector('.cycle-current').textContent.includes('Nova versão disponível'));
  await click(document,'Gerenciar ciclo');await click(document,'Ativar ciclo ✓');const updated=JSON.parse(dom.window.localStorage.getItem('ritmo.active-cycle.v1'));assert.equal(updated.id,cycle.id);assert.equal(updated.programRevision,2);assert.equal(updated.program.title,'Ciclo revisado');assert.equal(JSON.stringify(library(dom).active),started);assert.ok(document.querySelector('.cycle-slot').textContent.includes('Em andamento'));assert.deepEqual(errors,[]);
  }finally{dom.window.close();}
 });

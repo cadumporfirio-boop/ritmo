@@ -5,22 +5,23 @@ import {METRICS,ROLES,expand,entryValid,evaluateEntry,goalLabel,sessionExpansion
 import type {TrainingSession,Entry,Metric,ExpandedStep} from './training';
 
 @Component({selector:'training-runner',standalone:true,imports:[FormsModule],template:`
- <section class="page-heading"><div><p class="eyebrow">{{readonly()?'HISTÓRICO · FICHA PRESERVADA':'EXECUÇÃO DO TREINO'}}</p><h1>{{session().plan.title}}<span>.</span></h1><p>Versão {{session().plan.revision}} · {{confirmed()}}/{{session().entries.length}} etapas registradas · {{skipped()}} não realizadas</p></div><button class="secondary" (click)="back.emit()">Voltar ↗</button></section>
+ <section class="page-heading"><div><p class="eyebrow">{{readonly()?'HISTÓRICO · FICHA PRESERVADA':'EXECUÇÃO DO TREINO'}}</p><h1>{{session().plan.title}}<span>.</span></h1><p>Versão {{session().plan.revision}} · {{confirmed()}}/{{session().entries.length}} registros@if(skipped()>0){ · {{skipped()}} não realizados}</p></div><button class="secondary" (click)="back.emit()">Voltar ↗</button></section>
  @if(session().planning;as origin){<p class="notice">{{origin.programTitle}} · v{{origin.programRevision}} · dia {{origin.day}} @if(origin.stimulus){· {{origin.stimulus}}}</p>}
  @if(session().plan.notes){<p class="notice">{{session().plan.notes}}</p>}
+ <details class="inline-help runner-guide"><summary>Como ler as cores</summary><p>Verde: meta atingida. Âmbar: fora da faixa. Cinza: pendente ou sem meta.</p></details>
  @for(block of blocks();track block.key;let bi=$index){@let first=block.items[0].item.step;@let status=blockStatus(block.items);
  <section class="panel execution-block" [attr.data-exercise-tone]="status.tone"><div class="exercise-heading"><span class="exercise-number">{{bi+1<10?'0':''}}{{bi+1}}</span><div><h2>{{first.name}}</h2><p>{{block.items.length}} {{session().plan.sport==='martial'?'rounds':'séries'}} @if(first.equipment){· {{first.equipment}}}</p></div></div>
  @if(first.notes){<p class="entry-instructions">{{first.notes}}</p>}
  <p class="exercise-summary">{{status.registered}}/{{block.items.length}} séries registradas · {{status.matched}} na meta · {{status.outside}} fora da faixa</p>
  @if(!readonly()){<button class="complete-exercise" [attr.data-tone]="status.tone" [attr.aria-pressed]="status.complete" (click)="completeBlock(block.items)">{{status.complete?'✓ Exercício concluído · reabrir':'Concluir exercício ✓'}}</button>}
- <p class="series-legend">Verde: meta atingida · Âmbar: fora da faixa · Cinza: pendente ou sem meta.</p>
+
  <div class="series-grid-header" [style.grid-template-columns]="grid(block.items)"><span>Série</span>@for(metric of columns(block.items);track metric){<span>{{shortLabel(metric)}}@if(metrics[metric].unit){<small>{{metrics[metric].unit}}</small>}</span>}<span>Feito</span></div>
  @for(row of block.items;track row.item.key;let series=$index){@let item=row.item;@let i=row.index;@let entry=session().entries[i];@let feedback=assessment(item.step,entry);
  <section class="structured-entry series-entry" [attr.data-tone]="feedback.tone">
  <div class="series-grid-row" [style.grid-template-columns]="grid(block.items)"><span class="series-index">{{series+1}}</span>
  @for(metric of columns(block.items);track metric){@if(hasMetric(item.step,metric)){<input type="number" [min]="metrics[metric].min" [max]="metrics[metric].max" [step]="metrics[metric].integer?1:0.1" [ngModel]="entry.values[metric]" (ngModelChange)="setValue(entry,metric,$event)" [disabled]="readonly()" placeholder="—" [attr.aria-describedby]="'series-targets-'+session().id+'-'+i" [attr.aria-label]="'Etapa '+(i+1)+' '+metrics[metric].label">}@else{<span class="metric-unused">—</span>}}
  <button class="primary series-check" [disabled]="readonly()" [attr.aria-label]="'Confirmar etapa '+(i+1)" [attr.aria-pressed]="entry.done" (click)="confirm(i)">{{entry.done?'✓':'○'}}</button><div class="series-targets" [id]="'series-targets-'+session().id+'-'+i"><strong>{{roleLabel(item.step.role)}}{{entry.extra?' · extra':''}}</strong>@for(target of item.step.goals;track target.metric){<span>{{shortLabel(target.metric)}}: {{label(target)}}{{target.required?'':' · opcional'}}</span>}@empty{<span>Conclusão manual · sem metas numéricas</span>}</div></div>
- <div class="series-result" role="status"><strong>{{feedback.label}}</strong> {{feedback.message}}</div>
+ @if(entry.done || entry.skipped){<div class="series-result" role="status"><strong>{{feedback.label}}</strong> {{feedback.message}}</div>}
  <details class="series-details"><summary>Observação e opções</summary>
  @if(!readonly()){<button class="text-button" (click)="toggleSkip(entry)">{{entry.skipped?'Desfazer não realizada':'Não realizada'}}</button>@if(entry.extra){<button class="text-button" (click)="removeExtra(i)">Remover série extra</button>}}
  <label>Observação<textarea rows="1" maxlength="2000" [ngModel]="entry.note" (ngModelChange)="entry.note=$event;changed.emit()" [disabled]="readonly()"></textarea></label></details>
@@ -28,7 +29,7 @@ import type {TrainingSession,Entry,Metric,ExpandedStep} from './training';
  @if(!readonly()){<button class="secondary add-session-series" (click)="addExtra(block.items)">Adicionar série extra +</button>}
  </section>}
  <section class="panel"><label>Observação da sessão<textarea rows="2" maxlength="4000" [ngModel]="session().note" (ngModelChange)="session().note=$event;changed.emit()" [disabled]="readonly()"></textarea></label></section>
- @if(!readonly()){<div class="finish-bar"><span>{{session().entries.length-confirmed()-skipped()}} etapas pendentes<small>Pendências não são preenchidas automaticamente.</small></span><button class="primary" (click)="finish.emit()">Encerrar e salvar sessão ✓</button></div>}
+ @if(!readonly()){<div class="finish-bar"><span>{{session().entries.length-confirmed()-skipped()}} etapas pendentes<small>Você pode completar depois.</small></span><button class="primary" (click)="finish.emit()">Encerrar e salvar sessão ✓</button></div>}
 `})
 export class TrainingRunner {
  session=input.required<TrainingSession>();readonly=input(false);changed=output<void>();back=output<void>();finish=output<void>();message=output<string>();

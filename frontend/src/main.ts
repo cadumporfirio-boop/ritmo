@@ -64,7 +64,7 @@ class App {
   openAi(){this.planning.aiOpen.set(true);this.planningView.set(true);this.navigate('week');}
   touch(){this.state.update(s=>({...s}));this.dirty.update(n=>n+1);}
   notify(message:string){this.toast.set(message);clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>this.toast.set(''),5500);}
-  navigate(tab:string){if(tab==='history')this.training.screen.set('library');this.openAnalysis.set(null);this.tab.set(tab);this.view.set('home');}
+  navigate(tab:string){if(tab==='history')this.training.screen.set('library');this.openAnalysis.set(null);this.tab.set(tab);this.view.set('home');document.scrollingElement?.scrollTo?.(0,0);}
   selectDay(index:number){this.selection.set(index);this.minutes=this.activity().minutes||30;}
   start(){
     if(this.state().active){this.view.set('workout');return;}

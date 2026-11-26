@@ -1,10 +1,16 @@
-# Ritmo — versão 0.7.1
+# Ritmo — versão 0.7.2
 
-Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.7.1.
+Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.7.2.
 
 ![Interface do Ritmo](preview.png)
 
 O projeto demonstra planejamento semanal, registro por série e revisão de sessões. A integração real com IA ainda não está ativa.
+
+## Novidades da versão 0.7.2
+
+Limpeza visual aplicada a Treinos, editores, planejamento simples e avançado, execução, histórico, análises, importação com IA e conta. Alturas, espaçamentos e alinhamento dos botões foram padronizados. As fichas destacam Iniciar e Editar; ações secundárias ficam em Mais opções. Explicações longas e a prévia de execução ficam recolhidas, com acesso por resumo.
+
+As legendas de cores ficam em uma ajuda única, sem repetição por exercício. Avisos de sucesso do ciclo, da IA e da conta podem ser fechados. Alertas de armazenamento, confirmação de substituição e conflitos de sincronização permanecem explícitos. A antiga informação de ausência de sincronização foi retirada. A revisão é de apresentação: contratos, metas, dados e cálculos não foram alterados.
 
 ## Novidades da versão 0.7.1
 
