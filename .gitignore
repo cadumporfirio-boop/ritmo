@@ -9,3 +9,4 @@ backend/bootstrap/cache/*.php
 backend/database/*.sqlite*
 tools/
 .env
+supabase/.temp/

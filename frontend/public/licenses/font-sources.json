@@ -1,0 +1,46 @@
+{
+  "source": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap",
+  "downloadScript": "tools/fonts.mjs",
+  "licenseSources": [
+    "https://raw.githubusercontent.com/google/fonts/main/ofl/dmsans/OFL.txt",
+    "https://raw.githubusercontent.com/google/fonts/main/ofl/manrope/OFL.txt"
+  ],
+  "files": [
+    {
+      "name": "font-0.woff2",
+      "sha256": "b0ae3e89a7d3ef2b1838bb4b1ceb0b17cc3435af061eee809d76aa623ff116e9"
+    },
+    {
+      "name": "font-1.woff2",
+      "sha256": "376427b5322148d8de1e03f263bcca4935a2d60ba71d9f94f4947ab664c711ae"
+    },
+    {
+      "name": "font-2.woff2",
+      "sha256": "b79a2ea7a38f33fd96a282fadb9ce97626bb0724a44d21075859f0e50239993a"
+    },
+    {
+      "name": "font-3.woff2",
+      "sha256": "2a8e7f713ee79fbccdef3cef5c787aff47580299f7da60144961e7db2ec08211"
+    },
+    {
+      "name": "font-4.woff2",
+      "sha256": "ed335894f8d954263675f7e457bf657374d8b7be629be4dc43aef97c309ad3ae"
+    },
+    {
+      "name": "font-5.woff2",
+      "sha256": "437dc9f921739a6893128fa4dfc299424951148475815a9a213a46457878c42b"
+    },
+    {
+      "name": "font-6.woff2",
+      "sha256": "68ed4be49ec7d32f07b42f9232dc01ca1df7a77be1d9b0731aac74db58235f34"
+    },
+    {
+      "name": "font-7.woff2",
+      "sha256": "ea1f264039fed13fd36e6d6f49fcae4fe7007def02cf2972b5c7f6d6f1349d06"
+    },
+    {
+      "name": "font-8.woff2",
+      "sha256": "a8291b05b2732801abdbbb6d06866c57431c3b990638462423e692151b5e0895"
+    }
+  ]
+}

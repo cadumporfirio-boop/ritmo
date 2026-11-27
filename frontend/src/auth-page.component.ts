@@ -1,9 +1,10 @@
+import {ThemePicker} from "./theme-picker.component";
 import {Component,inject,signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {CloudStore} from './cloud.store';
-@Component({selector:'auth-page',standalone:true,imports:[FormsModule],template:`
+@Component({selector:'auth-page',standalone:true,imports:[FormsModule,ThemePicker],template:`
 <main class="auth-page"><section class="auth-story"><a class="auth-brand" href="./" aria-label="Ritmo, início"><img src="icon.svg" width="38" height="38" alt="">ritmo</a><div class="auth-story-copy"><span class="auth-kicker">UM PASSO DE CADA VEZ</span><h1>Seu treino. <br>Seu tempo. <br>Seu ritmo.</h1><p>Planeje, registre e acompanhe sua evolução.</p></div><div class="auth-orbit" aria-hidden="true"><i></i><i></i><span></span></div><small>Menos planejamento. Mais movimento.</small></section>
-<section class="auth-access"><div class="auth-card">
+<section class="auth-access"><div class="auth-card"><theme-picker />
 @if(cloud.initializing() || cloud.verifying() || cloud.accessChecking()){
  <div class="auth-loading" role="status"><span class="auth-spinner" aria-hidden="true"></span><h2>Preparando seu acesso</h2><p>Só um instante.</p></div>
 }@else if(!cloud.configured()){
@@ -31,7 +32,7 @@ import {CloudStore} from './cloud.store';
 @if(formError() || cloud.message()){<div class="auth-feedback" role="status">{{formError() || cloud.message()}}</div>}
 @if(cloud.user() && !cloud.verified() && !cloud.initializing()){<button class="text-button auth-back" [disabled]="cloud.busy()||cloud.verifying()" (click)="cloud.retryAccess()">Verificar conexão novamente</button>}
 @if(!cloud.initializing() && !cloud.verifying()){<p class="auth-footnote">Seus treinos acompanham você.</p>}
-</div></section></main>
+<footer class="licenses-footer"><a href="licenses.html" target="_blank" rel="noopener">Licenças e créditos</a></footer></div></section></main>
 `})
 export class AuthPage {
  readonly cloud=inject(CloudStore);readonly mode=signal<'login'|'signup'|'recover'>('login');readonly visible=signal(false);readonly formError=signal('');email='';password='';confirmation='';

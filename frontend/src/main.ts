@@ -1,3 +1,6 @@
+import {ThemePicker} from "./theme-picker.component";
+import {ThemeStore} from "./theme.store";
+import {DataRights} from "./data-rights.component";
 import {AuthPage} from './auth-page.component';
 import {CloudStore} from './cloud.store';
 import {CloudAccount} from './cloud-account.component';
@@ -20,7 +23,7 @@ import {TrainingPanel} from './training-panel.component';
 import {TrainingStore} from './training.store';
 import type {Workout} from './training';
 
-@Component({selector:'ritmo-workspace',standalone:true,imports:[FormsModule,AnalysisComponent,TrainingPanel,PlanningPanel,ActiveCyclePanel,CloudAccount],templateUrl:'./app.html'})
+@Component({selector:'ritmo-workspace',standalone:true,imports:[FormsModule,AnalysisComponent,TrainingPanel,PlanningPanel,ActiveCyclePanel,CloudAccount,ThemePicker,DataRights],templateUrl:'./app.html'})
 class Workspace {
   readonly cloud=inject(CloudStore);
   readonly training=inject(TrainingStore);
@@ -65,7 +68,7 @@ class Workspace {
   openAi(){this.planning.aiOpen.set(true);this.planningView.set(true);this.navigate('week');}
   touch(){this.state.update(s=>({...s}));this.dirty.update(n=>n+1);}
   notify(message:string){this.toast.set(message);clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>this.toast.set(''),5500);}
-  navigate(tab:string){if(tab==='history')this.training.screen.set('library');this.openAnalysis.set(null);this.tab.set(tab);this.view.set('home');document.scrollingElement?.scrollTo?.(0,0);}
+  navigate(tab:string){if(tab==='history')this.training.screen.set('library');this.openAnalysis.set(null);this.tab.set(tab);this.view.set('home');document.scrollingElement?.scrollTo?.(0,0);requestAnimationFrame(()=>{const heading=document.querySelector<HTMLElement>("main .page-heading h1, main h1");if(heading){heading.setAttribute("tabindex","-1");heading.focus({preventScroll:true});}});}
   selectDay(index:number){this.selection.set(index);this.minutes=this.activity().minutes||30;}
   start(){
     if(this.state().active){this.view.set('workout');return;}
@@ -104,5 +107,5 @@ class Workspace {
   unlinkWorkout(index:number){this.state.update(state=>{const week=structuredClone(state.week);delete week[index].workoutId;return {...state,week};});this.notify('Ficha desvinculada deste dia.');}
 }
 @Component({selector:'app-root',standalone:true,imports:[Workspace,AuthPage],template:`@if(cloud.allowed()){<ritmo-workspace />}@else{<auth-page />}`})
-class App {readonly cloud=inject(CloudStore);}
+class App {readonly theme=inject(ThemeStore);readonly cloud=inject(CloudStore);}
 bootstrapApplication(App).catch(console.error);

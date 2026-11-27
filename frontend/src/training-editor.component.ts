@@ -44,7 +44,7 @@ export class TrainingNodeEditor {
  private readonly expanded=new Map<string,boolean>();
  isExpanded(id:string,fallback:boolean){return this.expanded.get(id)??fallback;}
  remember(id:string,event:Event){this.expanded.set(id,(event.target as HTMLDetailsElement).open);}
- closeCard(event:Event){event.stopPropagation();const card=(event.currentTarget as HTMLElement).closest('details')!;card.open=false;}
+ closeCard(event:Event){event.stopPropagation();const card=(event.currentTarget as HTMLElement).closest('details')!;card.open=false;requestAnimationFrame(()=>card.querySelector<HTMLElement>(":scope > summary")?.focus());}
  observations(node:Step){return [node.equipment,node.notes].filter(Boolean).join('\n');}
  setObservations(node:Step,value:string){node.equipment='';node.notes=value;this.changed.emit();}
  roleLabel(role:string){return this.roleChoices(role).find(item=>item.id===role)?.label??role;}

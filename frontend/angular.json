@@ -15,7 +15,8 @@
             "tsConfig": "tsconfig.app.json",
             "styles": [
               "src/styles.css",
-              "src/training.css"
+              "src/training.css",
+              "src/theme.css"
             ],
             "allowedCommonJsDependencies": [
               "ajv"
@@ -35,12 +36,14 @@
                 {
                   "type": "initial",
                   "maximumWarning": "700kB",
-                  "maximumError": "1MB"
+                  "maximumError": "1.2MB"
                 }
               ]
             },
             "demo": {
-              "define": {"RITMO_DEMO":"true"},
+              "define": {
+                "RITMO_DEMO": "true"
+              },
               "outputPath": "dist/ritmo-demo"
             }
           },

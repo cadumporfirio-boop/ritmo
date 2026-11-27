@@ -2,7 +2,7 @@ import {Component,ElementRef,effect,inject,input,viewChild} from '@angular/core'
 import {FormsModule} from '@angular/forms';
 import {CloudStore} from './cloud.store';
 @Component({selector:'cloud-account',standalone:true,imports:[FormsModule],template:`
-<dialog #dialog class="account-dialog" (cancel)="cancel($event)"><div class="account-header"><div><p class="eyebrow">SEUS DADOS, NO SEU RITMO</p><h2>Minha conta</h2></div>@if(!cloud.locked()){<button class="icon-button" aria-label="Fechar conta" (click)="cloud.panel.set(false)">×</button>}</div>
+<dialog #dialog class="account-dialog" aria-labelledby="account-title" (cancel)="cancel($event)"><div class="account-header"><div><p class="eyebrow">SEUS DADOS, NO SEU RITMO</p><h2 id="account-title">Minha conta</h2></div>@if(!cloud.locked()){<button class="icon-button" aria-label="Fechar conta" (click)="cloud.panel.set(false)">×</button>}</div>
 @if(cloud.message()){<div class="notice account-feedback" role="status">{{cloud.message()}}<button aria-label="Fechar mensagem da conta" (click)="cloud.message.set('')">×</button></div>}
 @if(cloud.initializing()){<p class="muted">Conferindo conexão…</p>}
 @else if(cloud.demo){<p class="account-intro">Para usar sua conta, abra o Ritmo em uma janela própria.</p><a class="secondary" href="https://cadumporfirio-boop.github.io/ritmo/" target="_blank" rel="noopener">Abrir Ritmo</a>}
@@ -21,7 +21,7 @@ import {CloudStore} from './cloud.store';
 </dialog>
 `})
 export class CloudAccount {
- readonly cloud=inject(CloudStore);readonly editing=input(false);readonly ongoing=input(false);readonly dialog=viewChild<ElementRef<HTMLDialogElement>>('dialog');replaceConfirmed=false;
- constructor(){effect(()=>{const element=this.dialog()?.nativeElement;if(!element)return;const open=this.cloud.panel();if(open&&!element.open){if(element.showModal)element.showModal();else element.setAttribute('open','');}else if(!open&&element.open){if(element.close)element.close();else element.removeAttribute('open');}});}
+ private returnFocus:HTMLElement|null=null;readonly cloud=inject(CloudStore);readonly editing=input(false);readonly ongoing=input(false);readonly dialog=viewChild<ElementRef<HTMLDialogElement>>('dialog');replaceConfirmed=false;
+ constructor(){effect(()=>{const element=this.dialog()?.nativeElement;if(!element)return;const open=this.cloud.panel();if(open&&!element.open){this.returnFocus=document.activeElement as HTMLElement;if(element.showModal)element.showModal();else element.setAttribute('open','');}else if(!open&&element.open){if(element.close)element.close();else element.removeAttribute('open');this.returnFocus?.focus();}});}
  cancel(event:Event){if(this.cloud.locked())event.preventDefault();else this.cloud.panel.set(false);}
 }

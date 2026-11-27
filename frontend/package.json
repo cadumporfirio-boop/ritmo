@@ -1,15 +1,15 @@
 {
   "name": "treino-flow",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "ng serve --host 127.0.0.1",
-    "build": "ng build",
+    "build": "ng build && node scripts/licenses.mjs dist/treino-flow",
     "check": "tsc --noEmit -p tsconfig.app.json",
     "test:domain": "node --experimental-strip-types --test tests/*.test.ts",
     "test:ui": "node --test tests/ui-flow.test.mjs",
-    "build:demo": "ng build --configuration=production,demo"
+    "build:demo": "ng build --configuration=production,demo && node scripts/licenses.mjs dist/ritmo-demo"
   },
   "dependencies": {
     "@angular/common": "22.2.6",

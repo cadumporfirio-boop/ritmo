@@ -1,10 +1,20 @@
-# Ritmo — versão 0.8.0
+# Ritmo — versão 0.9.0
 
-Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.8.0.
+Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.9.0.
 
 ![Interface do Ritmo](preview.png)
 
 O projeto demonstra planejamento semanal, registro por série e revisão de sessões. A integração real com IA ainda não está ativa.
+
+## Novidades da versão 0.9.0
+
+Tema claro, escuro em preto/grafite ou do aparelho, configurável no acesso e no perfil. Preferência visual local e separada na demo, sem alterar snapshots. Contraste dos textos auxiliares e foco foi ajustado; cards devolvem foco ao resumo e o modal de conta possui título acessível. São correções dos pontos encontrados, não uma certificação WCAG integral.
+
+Meu perfil → Seus dados oferece exportação, solicitações com protocolo e exclusão da conta autenticada. A exclusão exige senha, e-mail, confirmação EXCLUIR e reconhecimento explícito. A Edge Function confere a identidade no Auth e login recente, revoga sessões, remove o usuário e aciona cascata para snapshot e solicitações. A limpeza local é restrita à própria conta, com opção separada para dados antigos sem login. Não apaga outros aparelhos, arquivos baixados nem chats externos. Veja [o procedimento operacional](supabase/DATA-RIGHTS-OPERATIONS.md) para atendimento, retenção pendente e supressão de dados após restauração. O contato público para quem perdeu acesso ainda depende de definição do responsável.
+
+Na troca manual com IA, perfil, histórico, contexto pessoal e observações ficam desmarcados por padrão. A prévia pode ser editada e copiar/baixar exige confirmação de revisão. A remoção de campos conhecidos não é anonimização: títulos, instruções e outros textos livres podem identificar pessoas. Nenhum provedor de IA recebe dados automaticamente.
+
+Licenças e créditos são distribuídos com o app, incluindo avisos das bibliotecas e OFL das fontes DM Sans e Manrope. `scripts/licenses.mjs` gera a página a partir dos avisos efetivamente emitidos pelo Angular; `public/licenses/font-sources.json` registra origem e hashes dos arquivos.
 
 ## Novidades da versão 0.8.0
 
