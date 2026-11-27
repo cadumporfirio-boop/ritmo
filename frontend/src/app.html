@@ -10,7 +10,7 @@
       <button [class.active]="tab()==='history'" [attr.aria-current]="tab()==='history'?'page':null" (click)="navigate('history')"><span>↗</span> Histórico</button>
       <button [class.active]="tab()==='profile'" [attr.aria-current]="tab()==='profile'?'page':null" (click)="navigate('profile')"><span>⚙</span> Meu perfil</button>
     </nav>
-    <div class="sidebar-bottom"><div class="tiny-orbit">✳</div><h3>Menos planejamento.<br>Mais movimento.</h3><p>Um passo de cada vez, no seu ritmo.</p><span class="version">CONTA E SINCRONIZAÇÃO · 0.7</span></div>
+    <div class="sidebar-bottom"><div class="tiny-orbit">✳</div><h3>Menos planejamento.<br>Mais movimento.</h3><p>Um passo de cada vez, no seu ritmo.</p><span class="version">SEU TREINO, SEU RITMO · 0.8</span></div>
     <button class="user" (click)="navigate('profile')"><span class="avatar">{{state().profile.name.slice(0,1).toUpperCase() || 'V'}}</span><span>{{state().profile.name || 'Seu perfil'}}<small>Objetivo: reduzir gordura</small></span><span>⌄</span></button>
   </aside>
   <main>

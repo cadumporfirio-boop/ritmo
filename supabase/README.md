@@ -24,6 +24,10 @@ Referência: https://supabase.com/docs/guides/auth/auth-smtp
 
 ## Sincronização e recuperação
 
+Desde a versão 0.8, o app exige login em página própria. A sessão restaurada é conferida com `auth.getUser()` antes de montar os stores de treinos. Falha na validação mantém a página de acesso e preserva o cache; não existe botão de acesso sem conta no app. Cadastro com confirmação pendente também não libera a interface. Ao sair, o conteúdo pessoal é desmontado antes do recarregamento.
+
+Uma conta com cópia local abre seu próprio espaço, preservando pendências; na ausência de cache, abre a cópia online. Uma conta vazia pede a escolha entre rotina inicial e migração explícita dos dados antigos sem conta. A demo pública é uma compilação diferente, com prefixo local `ritmo.demo.*`, sem cliente Supabase. Estar em iframe não dispensa o login da compilação principal.
+
 Sem conta, chaves locais antigas são preservadas. Com conta, dados usam ritmo.account.<userId>.<key>. A escolha do espaço é por aba em sessionStorage. Outra conta não recebe os dados anteriores.
 
 Somente dados salvos são sincronizados; rascunhos não fazem parte da cópia online. O cliente mantém a última cópia confirmada para distinguir edição local, atualização online e conflito. Conflitos não são resolvidos por último escritor silencioso.

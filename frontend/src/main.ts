@@ -1,3 +1,4 @@
+import {AuthPage} from './auth-page.component';
 import {CloudStore} from './cloud.store';
 import {CloudAccount} from './cloud-account.component';
 import {appStorage} from './app-storage';
@@ -19,8 +20,8 @@ import {TrainingPanel} from './training-panel.component';
 import {TrainingStore} from './training.store';
 import type {Workout} from './training';
 
-@Component({selector:'app-root',standalone:true,imports:[FormsModule,AnalysisComponent,TrainingPanel,PlanningPanel,ActiveCyclePanel,CloudAccount],templateUrl:'./app.html'})
-class App {
+@Component({selector:'ritmo-workspace',standalone:true,imports:[FormsModule,AnalysisComponent,TrainingPanel,PlanningPanel,ActiveCyclePanel,CloudAccount],templateUrl:'./app.html'})
+class Workspace {
   readonly cloud=inject(CloudStore);
   readonly training=inject(TrainingStore);
   readonly planning=inject(PlanningStore);
@@ -102,4 +103,6 @@ class App {
   assignWorkout(plan:Workout){this.state.update(state=>{const week=structuredClone(state.week);week[this.selection()]={...week[this.selection()],name:plan.title,type:plan.sport==='strength'?'strength':'sport',workoutId:plan.id};return {...state,week};});this.notify(`Ficha associada a ${this.activity().day}. As próximas sessões usarão a versão mais recente.`);}
   unlinkWorkout(index:number){this.state.update(state=>{const week=structuredClone(state.week);delete week[index].workoutId;return {...state,week};});this.notify('Ficha desvinculada deste dia.');}
 }
+@Component({selector:'app-root',standalone:true,imports:[Workspace,AuthPage],template:`@if(cloud.allowed()){<ritmo-workspace />}@else{<auth-page />}`})
+class App {readonly cloud=inject(CloudStore);}
 bootstrapApplication(App).catch(console.error);

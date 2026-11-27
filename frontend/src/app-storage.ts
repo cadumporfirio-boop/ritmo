@@ -1,7 +1,8 @@
+import {DEMO_MODE} from './app-mode.ts';
 /** Each tab keeps its workspace; guest data is never moved or deleted by login. */
 export const WORKSPACE_KEY='ritmo.workspace.v1';
-export function workspace():string {try{return sessionStorage.getItem(WORKSPACE_KEY)||'guest';}catch{return 'guest';}}
-export function physicalKey(key:string,owner=workspace()):string {return owner==='guest'?key:`ritmo.account.${owner}.${key}`;}
+export function workspace():string {if(DEMO_MODE)return 'demo';try{return sessionStorage.getItem(WORKSPACE_KEY)||'guest';}catch{return 'guest';}}
+export function physicalKey(key:string,owner=workspace()):string {return owner==='demo'?'ritmo.demo.'+key:owner==='guest'?key:`ritmo.account.${owner}.${key}`;}
 export const appStorage={
  getItem(key:string){return localStorage.getItem(physicalKey(key));},
  setItem(key:string,value:string){const keyName=physicalKey(key);if(localStorage.getItem(keyName)===value)return;localStorage.setItem(keyName,value);if(!key.endsWith('.previous'))window.dispatchEvent(new Event('ritmo-data-change'));},

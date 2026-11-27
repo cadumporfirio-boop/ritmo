@@ -1,10 +1,20 @@
-# Ritmo — versão 0.7.2
+# Ritmo — versão 0.8.0
 
-Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.7.2.
+Aplicação web para organizar treinos e registrar desempenho, com Angular + TypeScript e API em PHP/Laravel. Versão atual: 0.8.0.
 
 ![Interface do Ritmo](preview.png)
 
 O projeto demonstra planejamento semanal, registro por série e revisão de sessões. A integração real com IA ainda não está ativa.
+
+## Novidades da versão 0.8.0
+
+O endereço do app começa por uma página de login, cadastro e recuperação de senha. O conteúdo do sistema só é montado depois da validação da sessão no Supabase Auth; uma sessão gravada no navegador não basta para liberar a interface. Sair da conta fecha as telas pessoais. Recuperação de senha possui formulário próprio antes do retorno ao app.
+
+Uma conta existente abre seu espaço separado automaticamente. Uma conta nova permite começar com a rotina inicial ou enviar explicitamente os dados antigos deste navegador, mantendo a cópia original. Nenhum dado sem conta é enviado ao autenticar. Alterações da própria conta ainda pendentes de envio são preservadas ao entrar novamente.
+
+O beta público do portfólio é compilado separadamente com `npm run build:demo`, usa chaves `ritmo.demo.*` e não conecta ao Supabase, mesmo quando há uma conta selecionada no navegador. O app publicado exige autenticação inclusive dentro de iframe. Para os testes de interface, compilar as versões normal e demo antes de executar `npm run test:ui`.
+
+Os testes usam contas e rede simuladas: cobrem bloqueio de acesso, sessão inválida, cadastro, recuperação, saída, isolamento e sincronização. O envio de e-mail real continua dependente das configurações do projeto; o SMTP padrão do Supabase limita os destinatários aos membros da organização. Veja [a configuração do Supabase](supabase/README.md) antes de abrir o cadastro ao público.
 
 ## Novidades da versão 0.7.2
 

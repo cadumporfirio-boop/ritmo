@@ -1,6 +1,6 @@
 {
   "name": "treino-flow",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,8 @@
     "build": "ng build",
     "check": "tsc --noEmit -p tsconfig.app.json",
     "test:domain": "node --experimental-strip-types --test tests/*.test.ts",
-    "test:ui": "node --test tests/ui-flow.test.mjs"
+    "test:ui": "node --test tests/ui-flow.test.mjs",
+    "build:demo": "ng build --configuration=production,demo"
   },
   "dependencies": {
     "@angular/common": "22.2.6",
